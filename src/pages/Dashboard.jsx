@@ -27,8 +27,8 @@ function deriveClass(stats) {
 }
 
 export default function Dashboard() {
-  const { playerStats, updateHP, setPlayerName } = useGame();
-  const { name, gold, hp, burnoutDebuff, STR, INT, VIT, PER, sbiSavingsMandate } = playerStats;
+  const { playerStats, updateHP, setPlayerName, dismissNotification } = useGame();
+  const { name, gold, hp, burnoutDebuff, STR, INT, VIT, PER, sbiSavingsMandate, perfectDayAchieved } = playerStats;
   const { cls, total: totalStats } = deriveClass(playerStats);
 
   const [hpFlash, setHpFlash] = useState(false);
@@ -136,6 +136,51 @@ export default function Dashboard() {
           </div>
         </motion.div>
       )}
+
+      {/* Perfect Day Notification */}
+      <AnimatePresence>
+        {perfectDayAchieved && (
+          <motion.div
+            initial={{ opacity: 0, height: 0, marginBottom: 0 }}
+            animate={{ opacity: 1, height: 'auto', marginBottom: 24 }}
+            exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+            className="card"
+            style={{
+              background: 'rgba(255,215,0,0.05)',
+              border: '2px solid #ffd700',
+              padding: '20px 24px',
+              position: 'relative',
+              overflow: 'hidden',
+              boxShadow: '0 0 20px rgba(255,215,0,0.2)',
+            }}
+          >
+            {/* Animated background flare */}
+            <motion.div 
+              animate={{ opacity: [0.1, 0.3, 0.1], x: ['-100%', '100%'] }}
+              transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+              style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg, transparent, rgba(255,215,0,0.2), transparent)', pointerEvents: 'none' }}
+            />
+            
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <div className="font-orbitron" style={{ fontSize: '18px', fontWeight: 900, color: '#ffd700', letterSpacing: '0.15em', marginBottom: '4px' }}>
+                  🌟 PERFECT DAY ACHIEVED
+                </div>
+                <div style={{ color: '#fff', fontSize: '14px', fontFamily: 'Share Tech Mono, monospace' }}>
+                  SYSTEM EVALUATION: ALL DAILY MISSIONS ACCOMPLISHED. <span style={{ color: '#00ff88' }}>+15 HP RECOVERED.</span>
+                </div>
+              </div>
+              <button 
+                className="btn btn-gold" 
+                onClick={dismissNotification}
+                style={{ padding: '8px 16px', background: '#ffd700', color: '#000', fontSize: '11px', fontWeight: 900 }}
+              >
+                ACKNOWLEDGE
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 w-full">
         {/* Left Col */}

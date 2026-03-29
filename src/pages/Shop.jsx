@@ -11,7 +11,7 @@ export default function Shop() {
 
   const [addOpen, setAddOpen] = useState(false);
   const [confirmItem, setConfirmItem] = useState(null);
-  const [newItem, setNewItem] = useState({ title: '', description: '', baseCost: 100, isLuxury: false });
+  const [newItem, setNewItem] = useState({ title: '', description: '', baseCost: 100, isLuxury: false, isHealing: false, hpAmount: 20 });
 
   function handlePurchase() {
     if (!confirmItem) return;
@@ -21,8 +21,8 @@ export default function Shop() {
 
   function handleAdd() {
     if (!newItem.title.trim() || !newItem.baseCost) return;
-    addShopItem({ ...newItem, baseCost: Number(newItem.baseCost) });
-    setNewItem({ title: '', description: '', baseCost: 100, isLuxury: false });
+    addShopItem({ ...newItem, baseCost: Number(newItem.baseCost), hpAmount: newItem.isHealing ? Number(newItem.hpAmount) : 0 });
+    setNewItem({ title: '', description: '', baseCost: 100, isLuxury: false, isHealing: false, hpAmount: 20 });
     setAddOpen(false);
   }
 
@@ -142,11 +142,11 @@ export default function Shop() {
               )}
 
               <div style={{ fontSize: '32px', marginBottom: '12px' }}>
-                {item.isLuxury ? '💎' : '🛒'}
+                {item.isHealing ? '🧪' : item.isLuxury ? '💎' : '🛒'}
               </div>
 
-              <div style={{ fontSize: '15px', fontWeight: 600, color: '#e8eaf0', marginBottom: '4px', lineHeight: 1.4, paddingRight: item.isLuxury ? '60px' : 0 }}>
-                {item.title}
+              <div style={{ fontSize: '15px', fontWeight: 700, color: item.isHealing ? '#00ff88' : '#e8eaf0', marginBottom: '4px', lineHeight: 1.4, paddingRight: item.isLuxury ? '60px' : 0 }}>
+                {item.title} {item.isHealing && `(+${item.hpAmount} HP)`}
               </div>
 
               {item.description && (
@@ -238,7 +238,11 @@ export default function Shop() {
         {confirmItem && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <div style={{ fontSize: '16px', fontWeight: 600, color: '#e8eaf0' }}>{confirmItem.title}</div>
-            {confirmItem.isLuxury ? (
+            {item.isHealing ? (
+              <div style={{ fontSize: '13px', color: '#00ff88', lineHeight: 1.6, padding: '12px', background: 'rgba(0,255,136,0.06)', border: '1px solid rgba(0,255,136,0.2)', borderRadius: '3px' }}>
+                <strong style={{ color: '#00ff88' }}>APOTHECARY PROTOCOL:</strong> This potion will restore <strong style={{ color: '#fff' }}>{item.hpAmount} HP</strong> immediately. Gold is consumed by the merchant.
+              </div>
+            ) : item.isLuxury ? (
               <div style={{ fontSize: '13px', color: '#8892a0', lineHeight: 1.6, padding: '12px', background: 'rgba(191,95,255,0.06)', border: '1px solid rgba(191,95,255,0.2)', borderRadius: '3px' }}>
                 <strong style={{ color: '#bf5fff' }}>100% MATCH RULE:</strong> {confirmItem.baseCost.toLocaleString()}G sunk cost + {confirmItem.baseCost.toLocaleString()}G mandatory savings deposit = <strong style={{ color: '#ffd700' }}>{(confirmItem.baseCost * 2).toLocaleString()}G total</strong>
               </div>
@@ -289,17 +293,48 @@ export default function Shop() {
               min="1"
             />
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <input
-              type="checkbox"
-              id="is-luxury"
-              checked={newItem.isLuxury}
-              onChange={e => setNewItem(n => ({ ...n, isLuxury: e.target.checked }))}
-              style={{ accentColor: '#bf5fff', width: '16px', height: '16px' }}
-            />
-            <label htmlFor="is-luxury" style={{ fontSize: '14px', color: '#bf5fff', cursor: 'pointer', fontWeight: 600 }}>
-              Luxury Item (100% Match Rule)
-            </label>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <input
+                type="checkbox"
+                id="is-luxury"
+                disabled={newItem.isHealing}
+                checked={newItem.isLuxury}
+                onChange={e => setNewItem(n => ({ ...n, isLuxury: e.target.checked }))}
+                style={{ accentColor: '#bf5fff', width: '16px', height: '16px' }}
+              />
+              <label htmlFor="is-luxury" style={{ fontSize: '14px', color: newItem.isHealing ? '#3a3f52' : '#bf5fff', cursor: 'pointer', fontWeight: 600 }}>
+                Luxury Item (100% Match Rule)
+              </label>
+            </div>
+            
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', borderTop: '1px solid #1e2030', paddingTop: '12px' }}>
+              <input
+                type="checkbox"
+                id="is-healing"
+                disabled={newItem.isLuxury}
+                checked={newItem.isHealing}
+                onChange={e => setNewItem(n => ({ ...n, isHealing: e.target.checked }))}
+                style={{ accentColor: '#00ff88', width: '16px', height: '16px' }}
+              />
+              <label htmlFor="is-healing" style={{ fontSize: '14px', color: newItem.isLuxury ? '#3a3f52' : '#00ff88', cursor: 'pointer', fontWeight: 600 }}>
+                Healing Item (Apothecary Potion)
+              </label>
+            </div>
+
+            {newItem.isHealing && (
+              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}>
+                <label style={{ fontSize: '11px', color: '#00ff88', fontFamily: 'Orbitron, monospace', letterSpacing: '0.15em', display: 'block', marginBottom: '6px' }}>RECOVERY AMOUNT (HP)</label>
+                <input
+                  className="input-field"
+                  type="number"
+                  value={newItem.hpAmount}
+                  onChange={e => setNewItem(n => ({ ...n, hpAmount: e.target.value }))}
+                  min="1"
+                  max="100"
+                />
+              </motion.div>
+            )}
           </div>
           <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
             <button className="btn btn-solid-blue" style={{ flex: 1 }} onClick={handleAdd}>ADD ITEM</button>

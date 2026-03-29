@@ -18,6 +18,8 @@ const DEFAULT_STATE = {
     VIT: 0,
     PER: 0,
     sbiSavingsMandate: 0,
+    lastPerfectDayCheck: '',
+    perfectDayAchieved: false,
   },
   masterTasks: [],
   shopItems: [],
@@ -276,6 +278,11 @@ export function GameProvider({ children }) {
       Object.entries(task.statReward || {}).forEach(([stat, val]) => {
         newStats[stat] = (newStats[stat] || 0) + Math.floor(val * multiplier);
       });
+      
+      if (task.hpReward) {
+        newStats.hp = Math.min(100, newStats.hp + Math.floor(task.hpReward * multiplier));
+      }
+
       if (newStats.VIT >= 30 && newStats.hp >= 50) {
         newStats.burnoutDebuff = false;
       }
@@ -373,6 +380,17 @@ export function GameProvider({ children }) {
 
     const totalCost = item.isLuxury ? item.baseCost * 2 : item.baseCost;
     if (state.playerStats.gold < totalCost) return;
+
+    if (item.isHealing) {
+      const batch = writeBatch(db);
+      batch.update(doc(db, 'users', user.uid), {
+        'playerStats.gold': state.playerStats.gold - item.baseCost,
+        'playerStats.hp': Math.min(100, state.playerStats.hp + (item.hpAmount || 0))
+      });
+      await batch.commit();
+      triggerCelebration(`🧪 POTION CONSUMED! +${item.hpAmount} HP`, 'green');
+      return;
+    }
 
     const batch = writeBatch(db);
     let newGold = state.playerStats.gold;
@@ -495,6 +513,53 @@ export function GameProvider({ children }) {
     }
   }, [user, state.playerStats, triggerCelebration]);
 
+  const evaluatePerfectDay = useCallback(async () => {
+    if (!user) return;
+    const todayStr = new Date().toISOString().split('T')[0];
+    if (state.playerStats.lastPerfectDayCheck === todayStr) return;
+
+    // Get yesterday's date string
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+    // Identify daily tasks due yesterday
+    const dailyMissions = state.masterTasks.filter(t => t.recurrenceType === 'daily');
+    if (dailyMissions.length === 0) {
+      await updateDoc(doc(db, 'users', user.uid), { 'playerStats.lastPerfectDayCheck': todayStr });
+      return;
+    }
+
+    // Check if 100% were completed yesterday
+    const allDone = dailyMissions.every(task => {
+      const history = task.history || [];
+      return history.some(h => h.date === yesterdayStr && h.status === 'completed');
+    });
+
+    const updates = { 'playerStats.lastPerfectDayCheck': todayStr };
+    if (allDone) {
+      updates['playerStats.hp'] = Math.min(100, state.playerStats.hp + 15);
+      updates['playerStats.perfectDayAchieved'] = true;
+      triggerCelebration('🌟 PERFECT DAY BUFF: +15 HP!', 'gold');
+    } else {
+       updates['playerStats.perfectDayAchieved'] = false;
+    }
+
+    await updateDoc(doc(db, 'users', user.uid), updates);
+  }, [user, state.playerStats, state.masterTasks, triggerCelebration]);
+
+  // Run perfect day check on mount/user change
+  useEffect(() => {
+    if (user && state.masterTasks.length > 0) {
+      evaluatePerfectDay();
+    }
+  }, [user, state.masterTasks.length]);
+
+  const dismissNotification = useCallback(async () => {
+    if (!user) return;
+    await updateDoc(doc(db, 'users', user.uid), { 'playerStats.perfectDayAchieved': false });
+  }, [user]);
+
   // ─── System Overrides ────────────────────────────────────────────────────────
   const setPlayerName = useCallback(async (newName) => {
     if (!user) return;
@@ -586,6 +651,8 @@ export function GameProvider({ children }) {
     setManualGold,
     setGoldCap,
     setPlayerName,
+    evaluatePerfectDay,
+    dismissNotification,
     logout,
     executeProtocolZero,
     triggerCelebration,

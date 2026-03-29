@@ -27,7 +27,7 @@ export default function Quests() {
   const [floatingTexts, setFloatingTexts] = useState([]);
 
   const [formData, setFormData] = useState({
-    title: '', description: '', goldReward: 50, hpPenalty: 20,
+    title: '', description: '', goldReward: 50, hpPenalty: 20, hpReward: 0,
     INT: 0, STR: 0, VIT: 0, PER: 0,
     recurrenceType: 'once',
     recurrenceValue: formatDateStr(new Date()),
@@ -52,6 +52,7 @@ export default function Quests() {
     const y = rect.top;
     
     let floatStr = `+${task.goldReward}G`;
+    if (task.hpReward) floatStr += ` / +${task.hpReward} HP`;
     Object.entries(task.statReward || {}).forEach(([stat, val]) => {
       floatStr += ` / +${val} ${stat}`;
     });
@@ -72,7 +73,7 @@ export default function Quests() {
 
   function openAdd() {
     setFormData({
-      title: '', description: '', goldReward: 50, hpPenalty: 20,
+      title: '', description: '', goldReward: 50, hpPenalty: 20, hpReward: 0,
       INT: 0, STR: 0, VIT: 0, PER: 0,
       recurrenceType: 'once', recurrenceValue: formatDateStr(selectedDate),
       frequency: 1,
@@ -81,12 +82,12 @@ export default function Quests() {
   }
 
   function openEdit(task) {
-    const sr = task.statReward || {};
     setFormData({
       title: task.title,
       description: task.description || '',
       goldReward: task.goldReward || 0,
       hpPenalty: task.hpPenalty || 20,
+      hpReward: task.hpReward || 0,
       INT: sr.INT || 0,
       STR: sr.STR || 0,
       VIT: sr.VIT || 0,
@@ -112,6 +113,7 @@ export default function Quests() {
       description: formData.description,
       goldReward: Number(formData.goldReward),
       hpPenalty: Number(formData.hpPenalty),
+      hpReward: Number(formData.hpReward),
       statReward,
       recurrenceType: formData.recurrenceType,
       recurrenceValue: formData.recurrenceValue,
@@ -272,6 +274,10 @@ export default function Quests() {
           <input className="input-field" type="number" min="0" value={formData.goldReward} onChange={e => setFormData(f => ({ ...f, goldReward: e.target.value }))} style={{ borderColor: 'rgba(255,215,0,0.3)' }} />
         </div>
         <div>
+          <label style={{ fontSize: '11px', color: '#00ff88', fontFamily: 'Orbitron, monospace', letterSpacing: '0.15em', display: 'block', marginBottom: '6px' }}>HP RECOVERY</label>
+          <input className="input-field" type="number" min="0" value={formData.hpReward} onChange={e => setFormData(f => ({ ...f, hpReward: e.target.value }))} style={{ borderColor: 'rgba(0,255,136,0.3)' }} />
+        </div>
+        <div style={{ gridColumn: 'span 2' }}>
           <label style={{ fontSize: '11px', color: '#ff003c', fontFamily: 'Orbitron, monospace', letterSpacing: '0.15em', display: 'block', marginBottom: '6px' }}>HP PENALTY</label>
           <input className="input-field" type="number" min="0" value={formData.hpPenalty} onChange={e => setFormData(f => ({ ...f, hpPenalty: e.target.value }))} style={{ borderColor: 'rgba(255,0,60,0.3)' }} />
         </div>
@@ -479,6 +485,7 @@ export default function Quests() {
 
                       <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                         <span className="stat-badge tag-gold">+{task.goldReward}G</span>
+                        {task.hpReward > 0 && <span className="stat-badge tag-vit" style={{ background: 'rgba(0,255,136,0.15)', color: '#00ff88', border: '1px solid rgba(0,255,136,0.3)' }}>+{task.hpReward} HP</span>}
                         {Object.entries(task.statReward || {}).map(([stat, val]) => (
                           <span key={stat} className={`stat-badge tag-${stat.toLowerCase()}`}>
                             +{val} {stat}
