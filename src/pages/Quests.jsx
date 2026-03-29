@@ -82,6 +82,7 @@ export default function Quests() {
   }
 
   function openEdit(task) {
+    const sr = task.statReward || {};
     setFormData({
       title: task.title,
       description: task.description || '',

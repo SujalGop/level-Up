@@ -238,11 +238,11 @@ export default function Shop() {
         {confirmItem && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <div style={{ fontSize: '16px', fontWeight: 600, color: '#e8eaf0' }}>{confirmItem.title}</div>
-            {item.isHealing ? (
+            {confirmItem.isHealing ? (
               <div style={{ fontSize: '13px', color: '#00ff88', lineHeight: 1.6, padding: '12px', background: 'rgba(0,255,136,0.06)', border: '1px solid rgba(0,255,136,0.2)', borderRadius: '3px' }}>
-                <strong style={{ color: '#00ff88' }}>APOTHECARY PROTOCOL:</strong> This potion will restore <strong style={{ color: '#fff' }}>{item.hpAmount} HP</strong> immediately. Gold is consumed by the merchant.
+                <strong style={{ color: '#00ff88' }}>APOTHECARY PROTOCOL:</strong> This potion will restore <strong style={{ color: '#fff' }}>{confirmItem.hpAmount} HP</strong> immediately. Gold is consumed by the merchant.
               </div>
-            ) : item.isLuxury ? (
+            ) : confirmItem.isLuxury ? (
               <div style={{ fontSize: '13px', color: '#8892a0', lineHeight: 1.6, padding: '12px', background: 'rgba(191,95,255,0.06)', border: '1px solid rgba(191,95,255,0.2)', borderRadius: '3px' }}>
                 <strong style={{ color: '#bf5fff' }}>100% MATCH RULE:</strong> {confirmItem.baseCost.toLocaleString()}G sunk cost + {confirmItem.baseCost.toLocaleString()}G mandatory savings deposit = <strong style={{ color: '#ffd700' }}>{(confirmItem.baseCost * 2).toLocaleString()}G total</strong>
               </div>
