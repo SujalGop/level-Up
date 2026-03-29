@@ -4,7 +4,7 @@ import Modal from '../components/Modal';
 import { motion, AnimatePresence } from 'framer-motion';
 import Calendar from 'react-calendar';
 import { format } from 'date-fns';
-import { isTaskActiveOnDate, formatDateStr } from '../utils/schedule';
+import { isTaskActiveOnDate, formatDateStr, getTaskProgress } from '../utils/schedule';
 import PageTransition from '../components/PageTransition';
 
 const STAT_COLORS = { INT: '#00f0ff', STR: '#ff003c', VIT: '#00ff88', PER: '#bf5fff' };
@@ -29,9 +29,11 @@ export default function Quests() {
   const [formData, setFormData] = useState({
     title: '', description: '', goldReward: 50, hpPenalty: 20,
     INT: 0, STR: 0, VIT: 0, PER: 0,
-    recurrenceType: 'daily',
-    recurrenceValue: 1, // Default freq 1
+    recurrenceType: 'once',
+    recurrenceValue: formatDateStr(new Date()),
+    frequency: 1,
   });
+  const [newYearlyDate, setNewYearlyDate] = useState('01-01');
 
   const { burnoutDebuff } = playerStats;
 
@@ -72,7 +74,8 @@ export default function Quests() {
     setFormData({
       title: '', description: '', goldReward: 50, hpPenalty: 20,
       INT: 0, STR: 0, VIT: 0, PER: 0,
-      recurrenceType: 'daily', recurrenceValue: 1,
+      recurrenceType: 'once', recurrenceValue: formatDateStr(selectedDate),
+      frequency: 1,
     });
     setAddOpen(true);
   }
@@ -90,6 +93,7 @@ export default function Quests() {
       PER: sr.PER || 0,
       recurrenceType: task.recurrenceType || 'daily',
       recurrenceValue: task.recurrenceValue || 1,
+      frequency: task.frequency || (['daily', 'weekly_count'].includes(task.recurrenceType) ? Number(task.recurrenceValue) || 1 : 1),
     });
     setEditTarget(task);
   }
@@ -111,6 +115,7 @@ export default function Quests() {
       statReward,
       recurrenceType: formData.recurrenceType,
       recurrenceValue: formData.recurrenceValue,
+      frequency: Number(formData.frequency),
     };
 
     if (editTarget) {
@@ -145,6 +150,13 @@ export default function Quests() {
   // Custom UI for handling Recurrence Value input based on Type
   const renderRecurrenceInput = () => {
     switch (formData.recurrenceType) {
+      case 'once':
+        return (
+          <div>
+            <label style={{ fontSize: '10px', color: '#8892a0', display: 'block', marginBottom: '4px', fontFamily: 'Share Tech Mono, monospace' }}>TARGET DATE (YYYY-MM-DD)</label>
+            <input className="input-field" type="text" placeholder="e.g. 2024-12-25" value={formData.recurrenceValue} onChange={e => setFormData({ ...formData, recurrenceValue: e.target.value })} />
+          </div>
+        );
       case 'daily':
         return (
           <div>
@@ -179,6 +191,13 @@ export default function Quests() {
             </div>
           </div>
         );
+      case 'weekly_count':
+        return (
+          <div>
+            <label style={{ fontSize: '10px', color: '#8892a0', display: 'block', marginBottom: '4px', fontFamily: 'Share Tech Mono, monospace' }}>TIMES PER WEEK (QUOTA)</label>
+            <input className="input-field" type="number" min="1" max="7" value={formData.recurrenceValue} onChange={e => setFormData({ ...formData, recurrenceValue: Number(e.target.value) })} />
+          </div>
+        );
       case 'monthly':
         return (
           <div>
@@ -188,13 +207,49 @@ export default function Quests() {
         );
       case 'yearly':
         return (
-          <div>
-            <label style={{ fontSize: '10px', color: '#8892a0', display: 'block', marginBottom: '4px', fontFamily: 'Share Tech Mono, monospace' }}>DATE (MM-DD)</label>
-            <input className="input-field" type="text" placeholder="e.g. 10-31" value={formData.recurrenceValue} onChange={e => setFormData({ ...formData, recurrenceValue: e.target.value })} />
+          <div style={{ gridColumn: 'span 2' }}>
+            <label style={{ fontSize: '10px', color: '#8892a0', display: 'block', marginBottom: '4px', fontFamily: 'Share Tech Mono, monospace' }}>TARGET DATES (MM-DD)</label>
+            <div style={{ fontSize: '9px', color: '#3a3f52', marginBottom: '8px', fontFamily: 'Share Tech Mono, monospace', textTransform: 'uppercase' }}>
+              TIP: Leave dates empty to enable <span style={{ color: '#00f0ff' }}>YEARLY QUOTA</span> (Total successes across the year)
+            </div>
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+              <input 
+                className="input-field" 
+                type="text" 
+                placeholder="MM-DD (e.g. 10-31)" 
+                value={newYearlyDate} 
+                onChange={e => setNewYearlyDate(e.target.value)} 
+                style={{ flex: 1 }}
+              />
+              <button 
+                className="btn btn-blue" 
+                style={{ padding: '0 16px', fontSize: '18px' }}
+                onClick={() => {
+                  const current = Array.isArray(formData.recurrenceValue) ? formData.recurrenceValue : [formData.recurrenceValue].filter(Boolean);
+                  if (!current.includes(newYearlyDate)) {
+                    setFormData({ ...formData, recurrenceValue: [...current, newYearlyDate].sort() });
+                  }
+                }}
+              >+</button>
+            </div>
+            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+              {(Array.isArray(formData.recurrenceValue) ? formData.recurrenceValue : [formData.recurrenceValue].filter(Boolean)).map(d => (
+                <div key={d} style={{ 
+                  background: 'rgba(0, 240, 255, 0.1)', border: '1px solid #00f0ff', borderRadius: '3px',
+                  padding: '4px 8px', fontSize: '11px', color: '#fff', display: 'flex', alignItems: 'center', gap: '8px'
+                }}>
+                  {d}
+                  <span 
+                    style={{ cursor: 'pointer', color: '#ff003c', fontWeight: 'bold' }} 
+                    onClick={() => setFormData({ ...formData, recurrenceValue: formData.recurrenceValue.filter(v => v !== d) })}
+                  >×</span>
+                </div>
+              ))}
+            </div>
           </div>
         );
       case 'continuous':
-        return null; // No extra value needed
+        return null;
       default:
         return null;
     }
@@ -247,11 +302,14 @@ export default function Quests() {
                 let rv = 1;
                 if (rt === 'weekly') rv = [];
                 if (rt === 'yearly') rv = '01-01';
+                if (rt === 'once') rv = formatDateStr(selectedDate);
                 setFormData(f => ({ ...f, recurrenceType: rt, recurrenceValue: rv }));
               }}
             >
+              <option value="once">Once only</option>
               <option value="daily">Daily</option>
-              <option value="weekly">Weekly</option>
+              <option value="weekly">Weekly (Days)</option>
+              <option value="weekly_count">Weekly (Quota)</option>
               <option value="monthly">Monthly</option>
               <option value="yearly">Yearly</option>
               <option value="continuous">Continuous</option>
@@ -259,6 +317,22 @@ export default function Quests() {
           </div>
           {renderRecurrenceInput()}
         </div>
+
+        {formData.recurrenceType !== 'continuous' && (
+          <div style={{ marginTop: '16px', borderTop: '1px solid #1e2030', paddingTop: '16px' }}>
+            <label style={{ fontSize: '10px', color: '#8892a0', display: 'block', marginBottom: '4px', fontFamily: 'Share Tech Mono, monospace' }}>
+              PROTOCOL FREQUENCY (SUCCESSES PER CYCLE)
+            </label>
+            <input 
+              className="input-field" 
+              type="number" 
+              min="1" 
+              value={formData.frequency} 
+              onChange={e => setFormData({ ...formData, frequency: e.target.value })} 
+              placeholder="Times to complete..."
+            />
+          </div>
+        )}
       </div>
 
       <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
@@ -414,6 +488,34 @@ export default function Quests() {
                           FAIL: -{task.hpPenalty || 20} HP
                         </span>
                       </div>
+
+                      {/* Progress Bar */}
+                      {(() => {
+                        const progress = getTaskProgress(task, selectedDate);
+                        if (progress.type === 'percent') {
+                          return (
+                            <div style={{ marginTop: '16px', maxWidth: '300px' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', color: '#8892a0', marginBottom: '4px', fontFamily: 'Share Tech Mono, monospace', letterSpacing: '0.1em' }}>
+                                <span>PROTOCOL PROGRESS</span>
+                                <span style={{ color: '#00f0ff' }}>{progress.current} / {progress.total}</span>
+                              </div>
+                              <div style={{ height: '3px', background: 'rgba(255,255,255,0.05)', borderRadius: '1px', overflow: 'hidden' }}>
+                                <motion.div 
+                                  initial={{ width: 0 }}
+                                  animate={{ width: `${Math.min(100, (progress.current / progress.total) * 100)}%` }}
+                                  style={{ height: '100%', background: '#00f0ff', boxShadow: '0 0 10px rgba(0,240,255,0.5)' }}
+                                />
+                              </div>
+                            </div>
+                          );
+                        } else {
+                          return (
+                            <div style={{ marginTop: '12px', fontSize: '10px', color: '#00f0ff', fontFamily: 'Share Tech Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                              ⚡ LIFETIME SUCCESSES: {progress.current}
+                            </div>
+                          );
+                        }
+                      })()}
 
                       {task.description && (
                         <div style={{ fontSize: '13px', color: '#8892a0', marginTop: '12px', lineHeight: 1.4, borderLeft: '2px solid rgba(0,240,255,0.3)', paddingLeft: '8px' }}>

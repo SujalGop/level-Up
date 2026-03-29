@@ -1,4 +1,4 @@
-import { format, parseISO, isSameDay } from 'date-fns';
+import { format, parseISO, isSameDay, startOfWeek, endOfWeek, isWithinInterval, startOfYear, endOfYear } from 'date-fns';
 
 /**
  * Formats a Date object to YYYY-MM-DD local time string.
@@ -14,54 +14,128 @@ export function formatDateStr(date) {
  * @returns {boolean} True if the task is scheduled for this date
  */
 export function isTaskActiveOnDate(task, targetDate) {
-  const { recurrenceType, recurrenceValue, history = [] } = task;
+  const { recurrenceType, recurrenceValue, history = [], frequency } = task;
   const targetDateStr = formatDateStr(targetDate);
   
   // Find how many times this task was completed OR failed on this exact target date.
-  // We count both 'completed' and 'failed' to know if the user interacted with it fully.
-  // Or maybe only 'completed'? Wait, if it's failed, they shouldn't be able to do it again today.
-  // Actually, the user's logic: "If passed/failed, history is pushed".
   const dailyLogs = history.filter(h => h.date === targetDateStr);
+  
+  // Backward compatibility: If no frequency field, use recurrenceValue for types that were counts.
+  const freq = frequency ?? (['daily', 'weekly_count'].includes(recurrenceType) ? Number(recurrenceValue) || 1 : 1);
 
   switch (recurrenceType) {
+    case 'once': {
+      const isTargetDate = targetDateStr === recurrenceValue;
+      return isTargetDate && history.length < freq;
+    }
+
     case 'daily': {
-      // recurrenceValue determines frequency (e.g. 2 means twice a day).
-      // Active if the amount of logs for today is less than the required frequency.
-      const freq = Number(recurrenceValue) || 1;
       return dailyLogs.length < freq;
     }
 
     case 'weekly': {
-      // recurrenceValue is an array of days (e.g. [1, 3, 5])
-      // 0 = Sun, 1 = Mon ... 6 = Sat
       if (!Array.isArray(recurrenceValue)) return false;
       const targetDayOfWeek = targetDate.getDay();
       const isScheduled = recurrenceValue.includes(targetDayOfWeek);
-      return isScheduled && dailyLogs.length === 0;
+      return isScheduled && dailyLogs.length < freq;
+    }
+
+    case 'weekly_count': {
+      const weekStart = startOfWeek(targetDate);
+      const weekEnd = endOfWeek(targetDate);
+      
+      const weeklyLogs = history.filter(h => {
+        const logDate = parseISO(h.date);
+        return isWithinInterval(logDate, { start: weekStart, end: weekEnd });
+      });
+      
+      return weeklyLogs.length < freq && dailyLogs.length === 0;
     }
 
     case 'monthly': {
-      // recurrenceValue is the date (1-31)
       const targetDayOfMonth = targetDate.getDate();
       const isScheduled = Number(recurrenceValue) === targetDayOfMonth;
-      return isScheduled && dailyLogs.length === 0;
+      return isScheduled && dailyLogs.length < freq;
     }
 
     case 'yearly': {
-      // recurrenceValue is a string "MM-DD"
       const targetMonthDay = format(targetDate, 'MM-dd');
-      const isScheduled = recurrenceValue === targetMonthDay;
-      return isScheduled && dailyLogs.length === 0;
+      const hasDates = Array.isArray(recurrenceValue) ? recurrenceValue.length > 0 : !!recurrenceValue;
+
+      if (hasDates) {
+        const isScheduled = Array.isArray(recurrenceValue) 
+          ? recurrenceValue.includes(targetMonthDay) 
+          : recurrenceValue === targetMonthDay;
+        return isScheduled && dailyLogs.length < freq;
+      } else {
+        // Yearly Quota System
+        const yearStart = startOfYear(targetDate);
+        const yearEnd = endOfYear(targetDate);
+        const yearlyLogs = history.filter(h => {
+          const logDate = parseISO(h.date);
+          return isWithinInterval(logDate, { start: yearStart, end: yearEnd });
+        });
+        return yearlyLogs.length < freq && dailyLogs.length === 0;
+      }
     }
 
     case 'continuous': {
-      // "No specific due date. Once marked complete, it immediately spawns a fresh..."
-      // By definition, it's always active because you can do it infinite times.
-      // So it always appears on the currently selected date.
       return true;
     }
 
     default:
       return false;
+  }
+}
+
+/**
+ * Calculates completion progress for a task on a given date.
+ * @returns {Object} { current, total, type: 'percent' | 'count' }
+ */
+export function getTaskProgress(task, targetDate) {
+  const { recurrenceType, recurrenceValue, history = [], frequency } = task;
+  const targetDateStr = formatDateStr(targetDate);
+  const dailyLogs = history.filter(h => h.date === targetDateStr);
+  const freq = frequency ?? (['daily', 'weekly_count'].includes(recurrenceType) ? Number(recurrenceValue) || 1 : 1);
+  
+  switch (recurrenceType) {
+    case 'once':
+      return { current: history.length, total: freq, type: 'percent' };
+      
+    case 'daily':
+    case 'weekly':
+    case 'monthly':
+      return { current: dailyLogs.length, total: freq, type: 'percent' };
+
+    case 'yearly': {
+      const hasDates = Array.isArray(recurrenceValue) ? recurrenceValue.length > 0 : !!recurrenceValue;
+      if (hasDates) {
+        return { current: dailyLogs.length, total: freq, type: 'percent' };
+      } else {
+        const yearStart = startOfYear(targetDate);
+        const yearEnd = endOfYear(targetDate);
+        const yearlyLogs = history.filter(h => {
+          const logDate = parseISO(h.date);
+          return isWithinInterval(logDate, { start: yearStart, end: yearEnd });
+        });
+        return { current: yearlyLogs.length, total: freq, type: 'percent' };
+      }
+    }
+      
+    case 'weekly_count': {
+      const weekStart = startOfWeek(targetDate);
+      const weekEnd = endOfWeek(targetDate);
+      const weeklyLogs = history.filter(h => {
+        const logDate = parseISO(h.date);
+        return isWithinInterval(logDate, { start: weekStart, end: weekEnd });
+      });
+      return { current: weeklyLogs.length, total: freq, type: 'percent' };
+    }
+    
+    case 'continuous':
+      return { current: history.filter(h => h.status === 'completed').length, total: null, type: 'count' };
+      
+    default:
+      return { current: 0, total: 1, type: 'percent' };
   }
 }
