@@ -48,12 +48,19 @@ function MobileTopBar({ onMenuClick }) {
       </span>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-        <AnimatedCounter
-          value={playerStats.gold}
-          suffix="G"
-          className="font-mono text-[15px] font-bold text-[#ffd700]"
-          style={{ textShadow: '0 0 8px rgba(255,215,0,0.5)' }}
-        />
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: '2px' }}>
+          <AnimatedCounter
+            value={playerStats.gold}
+            suffix={playerStats.goldCap > 0 ? '' : 'G'}
+            className="font-mono text-[15px] font-bold text-[#ffd700]"
+            style={{ textShadow: '0 0 8px rgba(255,215,0,0.5)' }}
+          />
+          {playerStats.goldCap > 0 && (
+            <span style={{ fontSize: '10px', color: '#8892a0', fontFamily: 'Share Tech Mono, monospace' }}>
+              /<AnimatedCounter value={playerStats.goldCap} suffix="G" />
+            </span>
+          )}
+        </div>
         {playerStats.burnoutDebuff && (
           <span
             style={{

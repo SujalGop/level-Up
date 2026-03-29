@@ -104,11 +104,18 @@ export default function Sidebar({ onClose }) {
         <div style={{ fontSize: '11px', color: '#8892a0', fontFamily: 'Orbitron, monospace', letterSpacing: '0.15em', marginBottom: '6px' }}>
           BALANCE
         </div>
-        <AnimatedCounter
-          value={gold}
-          suffix="G"
-          className="font-mono glow-gold text-[22px] font-bold text-[#ffd700] tracking-wider"
-        />
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', flexWrap: 'wrap' }}>
+          <AnimatedCounter
+            value={gold}
+            suffix={playerStats.goldCap > 0 ? '' : 'G'}
+            className="font-mono glow-gold text-[22px] font-bold text-[#ffd700] tracking-wider"
+          />
+          {playerStats.goldCap > 0 && (
+            <span style={{ fontSize: '14px', color: '#8892a0', fontFamily: 'Share Tech Mono, monospace' }}>
+              / <AnimatedCounter value={playerStats.goldCap} suffix="G" />
+            </span>
+          )}
+        </div>
 
         {/* HP bar */}
         <div style={{ marginTop: '8px' }}>

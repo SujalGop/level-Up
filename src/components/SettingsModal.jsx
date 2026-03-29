@@ -3,10 +3,13 @@ import Modal from './Modal';
 import { useGame } from '../context/GameContext';
 
 export default function SettingsModal({ isOpen, onClose }) {
-  const { playerStats, setManualGold, executeProtocolZero, triggerScreenShake, logout } = useGame();
+  const { playerStats, setManualGold, setGoldCap, executeProtocolZero, triggerScreenShake, logout } = useGame();
   
   const [goldInput, setGoldInput] = useState(playerStats?.gold || 0);
   const [goldSuccess, setGoldSuccess] = useState(false);
+  
+  const [goldCapInput, setGoldCapInput] = useState(playerStats?.goldCap || 0);
+  const [capSuccess, setCapSuccess] = useState(false);
   
   const [wipeMode, setWipeMode] = useState(false);
   const [wipeInput, setWipeInput] = useState('');
@@ -15,11 +18,13 @@ export default function SettingsModal({ isOpen, onClose }) {
   React.useEffect(() => {
     if (isOpen) {
       setGoldInput(playerStats?.gold || 0);
+      setGoldCapInput(playerStats?.goldCap || 0);
       setWipeMode(false);
       setWipeInput('');
       setGoldSuccess(false);
+      setCapSuccess(false);
     }
-  }, [isOpen, playerStats?.gold]);
+  }, [isOpen, playerStats?.gold, playerStats?.goldCap]);
 
   function handleUpdateGold() {
     const val = Number(goldInput);
@@ -27,6 +32,15 @@ export default function SettingsModal({ isOpen, onClose }) {
       setManualGold(val);
       setGoldSuccess(true);
       setTimeout(() => setGoldSuccess(false), 2000);
+    }
+  }
+
+  function handleUpdateCap() {
+    const val = Number(goldCapInput);
+    if (!isNaN(val)) {
+      setGoldCap(val);
+      setCapSuccess(true);
+      setTimeout(() => setCapSuccess(false), 2000);
     }
   }
 
@@ -75,6 +89,47 @@ export default function SettingsModal({ isOpen, onClose }) {
             >
               {goldSuccess ? 'UPDATED' : 'UPDATE BALANCE'}
             </button>
+          </div>
+        </div>
+
+        {/* System Quota (Gold Cap) */}
+        <div style={{ background: '#0a0b10', padding: '16px', borderRadius: '4px', border: '1px solid #1e2030' }}>
+          <div className="font-orbitron" style={{ fontSize: '11px', color: '#ffd700', letterSpacing: '0.15em', marginBottom: '12px' }}>
+            SYSTEM QUOTA INJECTION
+          </div>
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-end' }}>
+            <div style={{ flex: 1 }}>
+              <label style={{ fontSize: '10px', color: '#8892a0', display: 'block', marginBottom: '6px', fontFamily: 'Share Tech Mono, monospace' }}>
+                TOTAL EARNABLE GOLD (CAP)
+              </label>
+              <input
+                className="input-field font-mono"
+                type="number"
+                value={goldCapInput}
+                onChange={e => setGoldCapInput(e.target.value)}
+                placeholder="Set 0 for No Limit"
+                style={{ 
+                  borderColor: capSuccess ? '#ffd700' : '#1e2030',
+                  boxShadow: capSuccess ? '0 0 10px rgba(255,215,0,0.3)' : 'none',
+                  transition: 'all 0.3s'
+                }}
+              />
+            </div>
+            <button 
+              className="btn btn-solid-gold"
+              onClick={handleUpdateCap}
+              style={{ 
+                background: capSuccess ? '#ffd700' : 'rgba(255,215,0,0.1)', 
+                border: '1px solid #ffd700',
+                color: capSuccess ? '#000' : '#ffd700', 
+                padding: '10px 16px' 
+              }}
+            >
+              {capSuccess ? 'INJECTED' : 'UPDATE QUOTA'}
+            </button>
+          </div>
+          <div style={{ fontSize: '10px', color: '#555', marginTop: '8px', fontFamily: 'Share Tech Mono, monospace' }}>
+            * Setting a cap limits further earnings. Spending gold shrinks the cap.
           </div>
         </div>
 

@@ -10,6 +10,7 @@ const DEFAULT_STATE = {
     name: 'Player',
     class: 'E-Rank',
     gold: 0,
+    goldCap: 0,
     hp: 100,
     burnoutDebuff: false,
     STR: 0,
@@ -185,12 +186,18 @@ export function GameProvider({ children }) {
       goals = autoDistribute(goals, amount);
     }
 
+    const newStats = {
+      ...currentStats,
+      gold: currentStats.gold - amount,
+      sbiSavingsMandate: currentStats.sbiSavingsMandate + amount,
+    };
+
+    if (currentStats.goldCap > 0) {
+      newStats.goldCap = Math.max(0, currentStats.goldCap - amount);
+    }
+
     batch.update(doc(db, 'users', user.uid), {
-      playerStats: {
-        ...currentStats,
-        gold: currentStats.gold - amount,
-        sbiSavingsMandate: currentStats.sbiSavingsMandate + amount,
-      }
+      playerStats: newStats
     });
 
     goals.forEach(g => {
@@ -222,12 +229,18 @@ export function GameProvider({ children }) {
       return { ...g, currentGold: newCurrent };
     });
 
+    const newStats = {
+      ...state.playerStats,
+      gold: state.playerStats.gold - amount,
+      sbiSavingsMandate: state.playerStats.sbiSavingsMandate + amount,
+    };
+
+    if (state.playerStats.goldCap > 0) {
+      newStats.goldCap = Math.max(0, state.playerStats.goldCap - amount);
+    }
+
     batch.update(doc(db, 'users', user.uid), {
-      playerStats: {
-        ...state.playerStats,
-        gold: state.playerStats.gold - amount,
-        sbiSavingsMandate: state.playerStats.sbiSavingsMandate + amount,
-      }
+      playerStats: newStats
     });
 
     goals.forEach(g => {
@@ -253,7 +266,13 @@ export function GameProvider({ children }) {
 
     if (status === 'completed') {
       const goldGain = Math.floor(task.goldReward * multiplier);
-      newStats.gold += goldGain;
+      let nextGold = newStats.gold + goldGain;
+      
+      if (newStats.goldCap > 0 && nextGold > newStats.goldCap) {
+        nextGold = newStats.goldCap;
+      }
+      
+      newStats.gold = nextGold;
       Object.entries(task.statReward || {}).forEach(([stat, val]) => {
         newStats[stat] = (newStats[stat] || 0) + Math.floor(val * multiplier);
       });
@@ -333,9 +352,15 @@ export function GameProvider({ children }) {
     if (!user) return;
     const intGain = Math.floor(minutes / 10);
     const goldGain = minutes * 2;
+    
+    let nextGold = state.playerStats.gold + goldGain;
+    if (state.playerStats.goldCap > 0 && nextGold > state.playerStats.goldCap) {
+      nextGold = state.playerStats.goldCap;
+    }
+
     await updateDoc(doc(db, 'users', user.uid), {
       'playerStats.INT': state.playerStats.INT + intGain,
-      'playerStats.gold': state.playerStats.gold + goldGain,
+      'playerStats.gold': nextGold,
     });
     triggerCelebration(`⚔️ DUNGEON CLEARED! +${intGain} INT +${goldGain}G`, 'blue');
   }, [user, state.playerStats, triggerCelebration]);
@@ -365,8 +390,15 @@ export function GameProvider({ children }) {
       newVaultGoals = autoDistribute(newVaultGoals, item.baseCost);
     }
 
+    const newStatsForDoc = { ...state.playerStats, gold: newGold, sbiSavingsMandate: newMandate };
+    
+    if (state.playerStats.goldCap > 0) {
+      const spentTotal = state.playerStats.gold - newGold;
+      newStatsForDoc.goldCap = Math.max(0, state.playerStats.goldCap - spentTotal);
+    }
+
     batch.update(doc(db, 'users', user.uid), {
-      playerStats: { ...state.playerStats, gold: newGold, sbiSavingsMandate: newMandate }
+      playerStats: newStatsForDoc
     });
 
     newVaultGoals.forEach(g => {
@@ -397,7 +429,12 @@ export function GameProvider({ children }) {
     Object.entries(milestone.statReward).forEach(([stat, val]) => {
       newStats[stat] = (newStats[stat] || 0) + val;
     });
-    newStats.gold += 500;
+    const goldGain = 500;
+    let nextGold = newStats.gold + goldGain;
+    if (newStats.goldCap > 0 && nextGold > newStats.goldCap) {
+      nextGold = newStats.goldCap;
+    }
+    newStats.gold = nextGold;
 
     const batch = writeBatch(db);
     batch.update(doc(db, 'users', user.uid), { playerStats: newStats });
@@ -466,8 +503,23 @@ export function GameProvider({ children }) {
 
   const setManualGold = useCallback(async (amount) => {
     if (!user) return;
-    await updateDoc(doc(db, 'users', user.uid), { 'playerStats.gold': amount });
-  }, [user]);
+    const updates = { 'playerStats.gold': amount };
+    // Optionally also set cap to accommodate if cap is enable but lower
+    if (state.playerStats.goldCap > 0 && amount > state.playerStats.goldCap) {
+      updates['playerStats.goldCap'] = amount;
+    }
+    await updateDoc(doc(db, 'users', user.uid), updates);
+  }, [user, state.playerStats.goldCap]);
+
+  const setGoldCap = useCallback(async (amount) => {
+    if (!user) return;
+    const updates = { 'playerStats.goldCap': amount };
+    // If setting a cap that is lower than current gold, clamp current gold
+    if (amount > 0 && state.playerStats.gold > amount) {
+      updates['playerStats.gold'] = amount;
+    }
+    await updateDoc(doc(db, 'users', user.uid), updates);
+  }, [user, state.playerStats.gold]);
 
   const executeProtocolZero = useCallback(async () => {
     if (!user) return;
@@ -532,6 +584,7 @@ export function GameProvider({ children }) {
     deleteVaultGoal,
     updateHP,
     setManualGold,
+    setGoldCap,
     setPlayerName,
     logout,
     executeProtocolZero,

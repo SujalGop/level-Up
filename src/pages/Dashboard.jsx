@@ -209,10 +209,18 @@ export default function Dashboard() {
             <div style={{ display: 'flex', gap: '16px' }}>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: '11px', color: '#8892a0', fontFamily: 'Orbitron, monospace', letterSpacing: '0.1em', marginBottom: '4px' }}>GOLD</div>
-                <AnimatedCounter
-                  value={gold}
-                  className="font-mono glow-gold text-[32px] font-bold text-[#ffd700]"
-                />
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
+                  <AnimatedCounter
+                    value={gold}
+                    suffix={playerStats.goldCap > 0 ? '' : 'G'}
+                    className="font-mono glow-gold text-[32px] font-bold text-[#ffd700]"
+                  />
+                  {playerStats.goldCap > 0 && (
+                    <span style={{ fontSize: '18px', color: '#8892a0', fontFamily: 'Share Tech Mono, monospace' }}>
+                      / <AnimatedCounter value={playerStats.goldCap} suffix="G" />
+                    </span>
+                  )}
+                </div>
               </div>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: '11px', color: '#ff003c', fontFamily: 'Orbitron, monospace', letterSpacing: '0.1em', marginBottom: '4px' }}>SBI MANDATE</div>
