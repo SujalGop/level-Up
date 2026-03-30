@@ -10,6 +10,121 @@ import PageTransition from '../components/PageTransition';
 const STAT_COLORS = { INT: '#00f0ff', STR: '#ff003c', VIT: '#00ff88', PER: '#bf5fff' };
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
+const QuestCard = ({ task, selectedDate, onComplete, onFail, onEdit, onDelete, isSecondary = false }) => (
+  <motion.div
+    key={task.id}
+    initial={{ opacity: 0, y: 10 }}
+    animate={{ opacity: 1, y: 0 }}
+    exit={{ opacity: 0, x: 100, scale: 0.98 }}
+    transition={{ duration: 0.3 }}
+    className="card"
+    style={{
+      padding: isSecondary ? '16px' : '20px',
+      borderColor: isSecondary ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 240, 255, 0.15)',
+      background: isSecondary 
+        ? 'rgba(13, 14, 20, 0.7)' 
+        : 'linear-gradient(90deg, #0d0e14, #111318)',
+    }}
+  >
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }}>
+      
+      {/* Left: Info */}
+      <div style={{ flex: 1 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
+          <span style={{
+            background: 'rgba(0,240,255,0.1)', border: '1px solid rgba(0,240,255,0.3)', borderRadius: '2px',
+            padding: '2px 6px', fontSize: '9px', fontWeight: 700, color: '#00f0ff', fontFamily: 'Share Tech Mono, monospace', textTransform: 'uppercase'
+          }}>
+            {task.recurrenceType}
+          </span>
+          <div style={{ fontSize: isSecondary ? '16px' : '17px', fontWeight: 700, color: '#e8eaf0' }}>
+            {task.title}
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          <span className="stat-badge tag-gold">+{task.goldReward}G</span>
+          {task.hpReward > 0 && <span className="stat-badge tag-vit" style={{ background: 'rgba(0,255,136,0.15)', color: '#00ff88', border: '1px solid rgba(0,255,136,0.3)' }}>+{task.hpReward} HP</span>}
+          {Object.entries(task.statReward || {}).map(([stat, val]) => (
+            <span key={stat} className={`stat-badge tag-${stat.toLowerCase()}`}>
+              +{val} {stat}
+            </span>
+          ))}
+          <span style={{ fontSize: '10px', color: '#ff003c', fontFamily: 'Share Tech Mono, monospace', background: 'rgba(255,0,60,0.1)', padding: '2px 6px', borderRadius: '2px', border: '1px solid rgba(255,0,60,0.3)' }}>
+            FAIL: -{task.hpPenalty || 20} HP
+          </span>
+        </div>
+
+        {/* Progress Bar */}
+        {(() => {
+          const progress = getTaskProgress(task, selectedDate);
+          if (progress.type === 'percent') {
+            return (
+              <div style={{ marginTop: '16px', maxWidth: '300px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', color: '#8892a0', marginBottom: '4px', fontFamily: 'Share Tech Mono, monospace', letterSpacing: '0.1em' }}>
+                  <span>PROTOCOL PROGRESS</span>
+                  <span style={{ color: '#00f0ff' }}>{progress.current} / {progress.total}</span>
+                </div>
+                <div style={{ height: '3px', background: 'rgba(255,255,255,0.05)', borderRadius: '1px', overflow: 'hidden' }}>
+                  <motion.div 
+                    initial={{ width: 0 }}
+                    animate={{ width: `${Math.min(100, (progress.current / progress.total) * 100)}%` }}
+                    style={{ height: '100%', background: '#00f0ff', boxShadow: '0 0 10px rgba(0,240,255,0.5)' }}
+                  />
+                </div>
+              </div>
+            );
+          } else {
+            return (
+              <div style={{ marginTop: '12px', fontSize: '10px', color: '#00f0ff', fontFamily: 'Share Tech Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                ⚡ LIFETIME SUCCESSES: {progress.current}
+              </div>
+            );
+          }
+        })()}
+
+        {task.description && (
+          <div style={{ fontSize: '13px', color: '#8892a0', marginTop: '12px', lineHeight: 1.4, borderLeft: '2px solid rgba(0,240,255,0.3)', paddingLeft: '8px' }}>
+            {task.description}
+          </div>
+        )}
+      </div>
+
+      {/* Right: Actions */}
+      <div style={{ display: 'flex', gap: '8px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          <button
+            className="btn btn-solid-blue"
+            style={{
+              background: '#00ff88', color: '#000', padding: '8px 16px', fontSize: '12px',
+              boxShadow: '0 0 10px rgba(0,255,136,0.3)'
+            }}
+            onClick={(e) => onComplete(e, task)}
+          >
+            ✔ COMPLETE
+          </button>
+          <button
+            className="btn"
+            style={{
+              background: 'rgba(255,0,60,0.1)', color: '#ff003c', border: '1px solid #ff003c', padding: '6px 16px', fontSize: '11px',
+            }}
+            onClick={() => onFail(task)}
+          >
+            ✖ FAIL
+          </button>
+        </div>
+        
+        {/* Secondary Actions (Edit/Delete) */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', borderLeft: '1px solid #1e2030', paddingLeft: '8px', marginLeft: '4px' }}>
+          <button className="btn btn-blue" style={{ flex: 1, padding: '4px 8px', fontSize: '10px' }} onClick={() => onEdit(task)}>EDIT</button>
+          <button className="btn btn-red" style={{ flex: 1, padding: '4px 8px', fontSize: '10px' }} onClick={() => onDelete(task.id)}>DEL</button>
+        </div>
+      </div>
+
+    </div>
+  </motion.div>
+);
+
 export default function Quests() {
   const {
     masterTasks, playerStats, resolveTask,
@@ -485,116 +600,15 @@ export default function Quests() {
                 </motion.div>
               ) : (
                 activeTasks.map((task) => (
-                  <motion.div
+                  <QuestCard
                     key={task.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, x: 100, scale: 0.98, borderColor: '#00E5FF' }}
-                    transition={{ duration: 0.3 }}
-                    className="card"
-                    style={{
-                      padding: '20px',
-                      borderColor: 'rgba(0, 240, 255, 0.15)',
-                      background: 'linear-gradient(90deg, #0d0e14, #111318)',
-                    }}
-                  >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }}>
-                      
-                      {/* Left: Info */}
-                      <div style={{ flex: 1 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
-                          <span style={{
-                            background: 'rgba(0,240,255,0.1)', border: '1px solid rgba(0,240,255,0.3)', borderRadius: '2px',
-                            padding: '2px 6px', fontSize: '9px', fontWeight: 700, color: '#00f0ff', fontFamily: 'Share Tech Mono, monospace', textTransform: 'uppercase'
-                          }}>
-                            {task.recurrenceType}
-                          </span>
-                          <div style={{ fontSize: '17px', fontWeight: 700, color: '#e8eaf0' }}>
-                            {task.title}
-                          </div>
-                        </div>
-
-                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                          <span className="stat-badge tag-gold">+{task.goldReward}G</span>
-                          {task.hpReward > 0 && <span className="stat-badge tag-vit" style={{ background: 'rgba(0,255,136,0.15)', color: '#00ff88', border: '1px solid rgba(0,255,136,0.3)' }}>+{task.hpReward} HP</span>}
-                          {Object.entries(task.statReward || {}).map(([stat, val]) => (
-                            <span key={stat} className={`stat-badge tag-${stat.toLowerCase()}`}>
-                              +{val} {stat}
-                            </span>
-                          ))}
-                          <span style={{ fontSize: '10px', color: '#ff003c', fontFamily: 'Share Tech Mono, monospace', background: 'rgba(255,0,60,0.1)', padding: '2px 6px', borderRadius: '2px', border: '1px solid rgba(255,0,60,0.3)' }}>
-                            FAIL: -{task.hpPenalty || 20} HP
-                          </span>
-                        </div>
-
-                        {/* Progress Bar */}
-                        {(() => {
-                          const progress = getTaskProgress(task, selectedDate);
-                          if (progress.type === 'percent') {
-                            return (
-                              <div style={{ marginTop: '16px', maxWidth: '300px' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', color: '#8892a0', marginBottom: '4px', fontFamily: 'Share Tech Mono, monospace', letterSpacing: '0.1em' }}>
-                                  <span>PROTOCOL PROGRESS</span>
-                                  <span style={{ color: '#00f0ff' }}>{progress.current} / {progress.total}</span>
-                                </div>
-                                <div style={{ height: '3px', background: 'rgba(255,255,255,0.05)', borderRadius: '1px', overflow: 'hidden' }}>
-                                  <motion.div 
-                                    initial={{ width: 0 }}
-                                    animate={{ width: `${Math.min(100, (progress.current / progress.total) * 100)}%` }}
-                                    style={{ height: '100%', background: '#00f0ff', boxShadow: '0 0 10px rgba(0,240,255,0.5)' }}
-                                  />
-                                </div>
-                              </div>
-                            );
-                          } else {
-                            return (
-                              <div style={{ marginTop: '12px', fontSize: '10px', color: '#00f0ff', fontFamily: 'Share Tech Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-                                ⚡ LIFETIME SUCCESSES: {progress.current}
-                              </div>
-                            );
-                          }
-                        })()}
-
-                        {task.description && (
-                          <div style={{ fontSize: '13px', color: '#8892a0', marginTop: '12px', lineHeight: 1.4, borderLeft: '2px solid rgba(0,240,255,0.3)', paddingLeft: '8px' }}>
-                            {task.description}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Right: Actions */}
-                      <div style={{ display: 'flex', gap: '8px' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                          <button
-                            className="btn btn-solid-blue"
-                            style={{
-                              background: '#00ff88', color: '#000', padding: '8px 16px', fontSize: '12px',
-                              boxShadow: '0 0 10px rgba(0,255,136,0.3)'
-                            }}
-                            onClick={(e) => handleTaskComplete(e, task)}
-                          >
-                            ✔ COMPLETE
-                          </button>
-                          <button
-                            className="btn"
-                            style={{
-                              background: 'rgba(255,0,60,0.1)', color: '#ff003c', border: '1px solid #ff003c', padding: '6px 16px', fontSize: '11px',
-                            }}
-                            onClick={() => handleTaskFail(task)}
-                          >
-                            ✖ FAIL
-                          </button>
-                        </div>
-                        
-                        {/* Secondary Actions (Edit/Delete) */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', borderLeft: '1px solid #1e2030', paddingLeft: '8px', marginLeft: '4px' }}>
-                          <button className="btn btn-blue" style={{ flex: 1, padding: '4px 8px', fontSize: '10px' }} onClick={() => openEdit(task)}>EDIT</button>
-                          <button className="btn btn-red" style={{ flex: 1, padding: '4px 8px', fontSize: '10px' }} onClick={() => deleteMasterTask(task.id)}>DEL</button>
-                        </div>
-                      </div>
-
-                    </div>
-                  </motion.div>
+                    task={task}
+                    selectedDate={selectedDate}
+                    onComplete={handleTaskComplete}
+                    onFail={handleTaskFail}
+                    onEdit={openEdit}
+                    onDelete={deleteMasterTask}
+                  />
                 ))
               )}
             </AnimatePresence>
@@ -610,33 +624,16 @@ export default function Quests() {
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   {tasks.map((task) => (
-                    <motion.div
+                    <QuestCard
                       key={task.id}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      className="card"
-                      style={{
-                        padding: '16px',
-                        borderColor: 'rgba(255, 255, 255, 0.05)',
-                        background: 'rgba(13, 14, 20, 0.7)',
-                      }}
-                    >
-                      {/* Similar Task UI but slightly simplified/compact */}
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div>
-                          <div style={{ fontSize: '15px', fontWeight: 600, color: '#d1d5db', marginBottom: '4px' }}>{task.title}</div>
-                          <div style={{ display: 'flex', gap: '6px' }}>
-                            <span style={{ fontSize: '9px', color: '#ffd700', fontFamily: 'Share Tech Mono, monospace' }}>{task.goldReward}G</span>
-                            <span style={{ fontSize: '9px', color: '#ff003c', fontFamily: 'Share Tech Mono, monospace' }}>-{task.hpPenalty} HP</span>
-                            <span style={{ fontSize: '9px', color: '#8892a0', fontFamily: 'Share Tech Mono, monospace' }}>[{task.recurrenceType}]</span>
-                          </div>
-                        </div>
-                        <div style={{ display: 'flex', gap: '6px' }}>
-                          <button className="btn" style={{ padding: '6px 12px', fontSize: '10px', background: '#00ff88', color: '#000' }} onClick={(e) => handleTaskComplete(e, task)}>✔</button>
-                          <button className="btn" style={{ padding: '6px 12px', fontSize: '10px', background: 'rgba(255,0,60,0.1)', color: '#ff003c', border: '1px solid #ff003c' }} onClick={() => handleTaskFail(task)}>✖</button>
-                        </div>
-                      </div>
-                    </motion.div>
+                      task={task}
+                      selectedDate={selectedDate}
+                      onComplete={handleTaskComplete}
+                      onFail={handleTaskFail}
+                      onEdit={openEdit}
+                      onDelete={deleteMasterTask}
+                      isSecondary={true}
+                    />
                   ))}
                 </div>
               </div>
