@@ -35,20 +35,35 @@ export default function Quests() {
   });
   const [newYearlyDate, setNewYearlyDate] = useState('01-01');
 
-  const { burnoutDebuff } = playerStats;
-
-  // Derive active tasks for the selected date
   const selectedDateStr = formatDateStr(selectedDate);
   const todayStr = formatDateStr(new Date());
   const isToday = selectedDateStr === todayStr;
 
-  const activeTasks = (masterTasks || []).filter(task => {
-    if (isToday) {
-      // Per user request: only consider daily repeating or deadline of today as pending
-      return isTaskPendingForDate(task, selectedDate);
-    }
-    return isTaskActiveOnDate(task, selectedDate);
-  });
+  const allActiveTasks = (masterTasks || []).filter(task => isTaskActiveOnDate(task, selectedDate));
+  
+  // Per user request: separate into "Pending" and "Other"
+  const pendingTasks = allActiveTasks.filter(task => isTaskPendingForDate(task, selectedDate));
+  const otherActiveTasks = allActiveTasks.filter(task => !isTaskPendingForDate(task, selectedDate));
+
+  // Group other active tasks by recurrenceType for sectional display
+  const groupedOtherTasks = otherActiveTasks.reduce((acc, task) => {
+    const type = task.recurrenceType || 'other';
+    if (!acc[type]) acc[type] = [];
+    acc[type].push(task);
+    return acc;
+  }, {});
+
+  const RECURRENCE_LABELS = {
+    weekly: 'WEEKLY MISSIONS',
+    weekly_count: 'WEEKLY QUOTA',
+    monthly: 'MONTHLY MISSIONS',
+    yearly: 'YEARLY MISSIONS',
+    continuous: 'CONTINUOUS TARGETS',
+    other: 'OTHER PROTOCOLS'
+  };
+
+  const activeTasks = isToday ? pendingTasks : allActiveTasks;
+
   // Count how many tasks total were done today (for the top counter)
   const completedTodayCount = (masterTasks || []).reduce((acc, t) => {
     return acc + (t.history || []).filter(h => h.date === todayStr && h.status === 'completed').length;
@@ -575,6 +590,50 @@ export default function Quests() {
                   </div>
                 </motion.div>
               ))}
+
+              {/* Grouped Other Active Tasks Sections (Today only) */}
+              {isToday && Object.entries(groupedOtherTasks).map(([type, tasks]) => (
+                <div key={type} style={{ marginTop: '24px' }}>
+                  <div style={{ 
+                    fontSize: '11px', color: '#8892a0', fontFamily: 'Orbitron, monospace', letterSpacing: '0.2em', 
+                    marginBottom: '12px', paddingLeft: '4px', borderLeft: '2px solid rgba(136,146,160,0.3)' 
+                  }}>
+                    {RECURRENCE_LABELS[type] || 'OTHER QUESTS'}
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    {tasks.map((task) => (
+                      <motion.div
+                        key={task.id}
+                        initial={{ opacity: 0, filter: 'grayscale(0.5)' }}
+                        animate={{ opacity: 1, filter: 'grayscale(0)' }}
+                        className="card"
+                        style={{
+                          padding: '16px',
+                          borderColor: 'rgba(255, 255, 255, 0.05)',
+                          background: 'rgba(13, 14, 20, 0.7)',
+                        }}
+                      >
+                        {/* Similar Task UI but slightly simplified/compact */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <div>
+                            <div style={{ fontSize: '15px', fontWeight: 600, color: '#d1d5db', marginBottom: '4px' }}>{task.title}</div>
+                            <div style={{ display: 'flex', gap: '6px' }}>
+                              <span style={{ fontSize: '9px', color: '#ffd700', fontFamily: 'Share Tech Mono, monospace' }}>{task.goldReward}G</span>
+                              <span style={{ fontSize: '9px', color: '#ff003c', fontFamily: 'Share Tech Mono, monospace' }}>-{task.hpPenalty} HP</span>
+                              <span style={{ fontSize: '9px', color: '#8892a0', fontFamily: 'Share Tech Mono, monospace' }}>[{task.recurrenceType}]</span>
+                            </div>
+                          </div>
+                          <div style={{ display: 'flex', gap: '6px' }}>
+                            <button className="btn" style={{ padding: '6px 12px', fontSize: '10px', background: '#00ff88', color: '#000' }} onClick={(e) => handleTaskComplete(e, task)}>✔</button>
+                            <button className="btn" style={{ padding: '6px 12px', fontSize: '10px', background: 'rgba(255,0,60,0.1)', color: '#ff003c', border: '1px solid #ff003c' }} onClick={() => handleTaskFail(task)}>✖</button>
+                          </div>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+
             </AnimatePresence>
           </div>
         </div>
