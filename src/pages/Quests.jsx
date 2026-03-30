@@ -4,7 +4,7 @@ import Modal from '../components/Modal';
 import { motion, AnimatePresence } from 'framer-motion';
 import Calendar from 'react-calendar';
 import { format } from 'date-fns';
-import { isTaskActiveOnDate, formatDateStr, getTaskProgress } from '../utils/schedule';
+import { isTaskActiveOnDate, isTaskPendingForDate, formatDateStr, getTaskProgress } from '../utils/schedule';
 import PageTransition from '../components/PageTransition';
 
 const STAT_COLORS = { INT: '#00f0ff', STR: '#ff003c', VIT: '#00ff88', PER: '#bf5fff' };
@@ -38,9 +38,18 @@ export default function Quests() {
   const { burnoutDebuff } = playerStats;
 
   // Derive active tasks for the selected date
-  const activeTasks = (masterTasks || []).filter(task => isTaskActiveOnDate(task, selectedDate));
-  // Count how many tasks total were done today (for the top counter)
+  const selectedDateStr = formatDateStr(selectedDate);
   const todayStr = formatDateStr(new Date());
+  const isToday = selectedDateStr === todayStr;
+
+  const activeTasks = (masterTasks || []).filter(task => {
+    if (isToday) {
+      // Per user request: only consider daily repeating or deadline of today as pending
+      return isTaskPendingForDate(task, selectedDate);
+    }
+    return isTaskActiveOnDate(task, selectedDate);
+  });
+  // Count how many tasks total were done today (for the top counter)
   const completedTodayCount = (masterTasks || []).reduce((acc, t) => {
     return acc + (t.history || []).filter(h => h.date === todayStr && h.status === 'completed').length;
   }, 0);

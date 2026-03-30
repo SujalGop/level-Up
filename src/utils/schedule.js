@@ -87,6 +87,24 @@ export function isTaskActiveOnDate(task, targetDate) {
       return false;
   }
 }
+/**
+ * Strictly checks if a task is "pending for today" based on the user's rule:
+ * - Repeating daily
+ * - OR has a deadline of today
+ */
+export function isTaskPendingForDate(task, targetDate) {
+  const active = isTaskActiveOnDate(task, targetDate);
+  if (!active) return false;
+
+  const { recurrenceType, recurrenceValue } = task;
+  const targetDateStr = formatDateStr(targetDate);
+
+  if (recurrenceType === 'daily') return true;
+  if (recurrenceType === 'once' && recurrenceValue === targetDateStr) return true;
+
+  return false;
+}
+
 
 /**
  * Calculates completion progress for a task on a given date.

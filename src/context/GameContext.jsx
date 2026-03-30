@@ -523,8 +523,12 @@ export function GameProvider({ children }) {
     yesterday.setDate(yesterday.getDate() - 1);
     const yesterdayStr = yesterday.toISOString().split('T')[0];
 
-    // Identify daily tasks due yesterday
-    const dailyMissions = state.masterTasks.filter(t => t.recurrenceType === 'daily');
+    // Identify tasks considered "pending" for yesterday (Daily or Once-Deadline-Yesterday)
+    const dailyMissions = state.masterTasks.filter(t => {
+      const isDaily = t.recurrenceType === 'daily';
+      const isOnceYesterday = t.recurrenceType === 'once' && t.recurrenceValue === yesterdayStr;
+      return isDaily || isOnceYesterday;
+    });
     if (dailyMissions.length === 0) {
       await updateDoc(doc(db, 'users', user.uid), { 'playerStats.lastPerfectDayCheck': todayStr });
       return;
