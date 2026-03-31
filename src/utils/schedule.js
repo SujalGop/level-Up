@@ -1,10 +1,31 @@
-import { format, parseISO, isSameDay, startOfWeek, endOfWeek, isWithinInterval, startOfYear, endOfYear } from 'date-fns';
+import { format, parseISO, isSameDay, startOfWeek, endOfWeek, isWithinInterval, startOfYear, endOfYear, subDays } from 'date-fns';
 
 /**
  * Formats a Date object to YYYY-MM-DD local time string.
  */
 export function formatDateStr(date) {
   return format(date, 'yyyy-MM-dd');
+}
+
+/**
+ * Returns the "System Time" adjusted by dayEndTime (HH:mm).
+ * If it's before dayEndTime, it's considered "yesterday".
+ */
+export function getSystemNow(dayEndTime = "00:00") {
+  const now = new Date();
+  const [endHour, endMinute] = (dayEndTime || "00:00").split(':').map(Number);
+  
+  if (now.getHours() < endHour || (now.getHours() === endHour && now.getMinutes() < endMinute)) {
+    return subDays(now, 1);
+  }
+  return now;
+}
+
+/**
+ * Returns the "System Date String" (YYYY-MM-DD) for today.
+ */
+export function getSystemDateStr(dayEndTime = "00:00") {
+  return formatDateStr(getSystemNow(dayEndTime));
 }
 
 /**

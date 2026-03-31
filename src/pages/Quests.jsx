@@ -4,7 +4,7 @@ import Modal from '../components/Modal';
 import { motion, AnimatePresence } from 'framer-motion';
 import Calendar from 'react-calendar';
 import { format } from 'date-fns';
-import { isTaskActiveOnDate, isTaskPendingForDate, formatDateStr, getTaskProgress } from '../utils/schedule';
+import { isTaskActiveOnDate, isTaskPendingForDate, formatDateStr, getTaskProgress, getSystemNow, getSystemDateStr } from '../utils/schedule';
 import PageTransition from '../components/PageTransition';
 
 const STAT_COLORS = { INT: '#00f0ff', STR: '#ff003c', VIT: '#00ff88', PER: '#bf5fff' };
@@ -141,11 +141,12 @@ const QuestCard = ({ task, selectedDate, onComplete, onFail, onUndo, onEdit, onD
 
 export default function Quests() {
   const {
-    masterTasks, playerStats, resolveTask, undoTask,
     addMasterTask, editMasterTask, deleteMasterTask, triggerPenalty, triggerScreenShake,
   } = useGame();
 
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  const { burnoutDebuff, dayEndTime } = playerStats;
+
+  const [selectedDate, setSelectedDate] = useState(() => getSystemNow(dayEndTime));
   
   const [penaltyOpen, setPenaltyOpen] = useState(false);
   const [penaltyAmount, setPenaltyAmount] = useState('');
@@ -159,14 +160,13 @@ export default function Quests() {
     title: '', description: '', goldReward: 50, hpPenalty: 20, hpReward: 0,
     INT: 0, STR: 0, VIT: 0, PER: 0,
     recurrenceType: 'once',
-    recurrenceValue: formatDateStr(new Date()),
+    recurrenceValue: getSystemDateStr(dayEndTime),
     frequency: 1,
   });
   const [newYearlyDate, setNewYearlyDate] = useState('01-01');
 
-  const { burnoutDebuff } = playerStats;
   const selectedDateStr = formatDateStr(selectedDate);
-  const todayStr = formatDateStr(new Date());
+  const todayStr = getSystemDateStr(dayEndTime);
   const isToday = selectedDateStr === todayStr;
 
   // Split tasks into Active and Done

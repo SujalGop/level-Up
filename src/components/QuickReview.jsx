@@ -1,14 +1,15 @@
 import React from 'react';
 import { useGame } from '../context/GameContext';
 import { motion } from 'framer-motion';
-import { isTaskActiveOnDate, isTaskPendingForDate } from '../utils/schedule';
+import { isTaskActiveOnDate, isTaskPendingForDate, getSystemNow } from '../utils/schedule';
 
 export default function QuickReview() {
-  const { masterTasks, vaultGoals, skillBooks } = useGame();
+  const { playerStats, masterTasks, vaultGoals, skillBooks } = useGame();
+  const { dayEndTime } = playerStats;
 
   // 1. Pending Daily Quest
-  // We use the new Date() to fetch quests active today, filtered by the user's "pending" rule.
-  const pendingQuest = (masterTasks || []).find(task => isTaskPendingForDate(task, new Date()));
+  // We use the system now to fetch quests active today, filtered by the user's "pending" rule.
+  const pendingQuest = (masterTasks || []).find(task => isTaskPendingForDate(task, getSystemNow(dayEndTime)));
 
   // 2. Highest priority guild vault item
   const topVaultGoal = [...(vaultGoals || [])]

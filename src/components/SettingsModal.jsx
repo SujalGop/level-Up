@@ -3,13 +3,16 @@ import Modal from './Modal';
 import { useGame } from '../context/GameContext';
 
 export default function SettingsModal({ isOpen, onClose }) {
-  const { playerStats, setManualGold, setGoldCap, executeProtocolZero, triggerScreenShake, logout } = useGame();
+  const { playerStats, setManualGold, setGoldCap, executeProtocolZero, triggerScreenShake, logout, setDayEndTime } = useGame();
   
   const [goldInput, setGoldInput] = useState(playerStats?.gold || 0);
   const [goldSuccess, setGoldSuccess] = useState(false);
   
   const [goldCapInput, setGoldCapInput] = useState(playerStats?.goldCap || 0);
   const [capSuccess, setCapSuccess] = useState(false);
+
+  const [dayEndTimeInput, setDayEndTimeInput] = useState(playerStats?.dayEndTime || '00:00');
+  const [timeSuccess, setTimeSuccess] = useState(false);
   
   const [wipeMode, setWipeMode] = useState(false);
   const [wipeInput, setWipeInput] = useState('');
@@ -19,12 +22,14 @@ export default function SettingsModal({ isOpen, onClose }) {
     if (isOpen) {
       setGoldInput(playerStats?.gold || 0);
       setGoldCapInput(playerStats?.goldCap || 0);
+      setDayEndTimeInput(playerStats?.dayEndTime || '00:00');
       setWipeMode(false);
       setWipeInput('');
       setGoldSuccess(false);
       setCapSuccess(false);
+      setTimeSuccess(false);
     }
-  }, [isOpen, playerStats?.gold, playerStats?.goldCap]);
+  }, [isOpen, playerStats?.gold, playerStats?.goldCap, playerStats?.dayEndTime]);
 
   function handleUpdateGold() {
     const val = Number(goldInput);
@@ -42,6 +47,12 @@ export default function SettingsModal({ isOpen, onClose }) {
       setCapSuccess(true);
       setTimeout(() => setCapSuccess(false), 2000);
     }
+  }
+
+  function handleUpdateTime() {
+    setDayEndTime(dayEndTimeInput);
+    setTimeSuccess(true);
+    setTimeout(() => setTimeSuccess(false), 2000);
   }
 
   function handleProtocolZero() {
@@ -134,6 +145,49 @@ export default function SettingsModal({ isOpen, onClose }) {
             * Setting a cap limits further earnings. Spending gold shrinks the cap.
           </div>
         </div>
+
+        {/* Circadian Override (Day End Time) */}
+        <div style={{ background: '#0a0b10', padding: '16px', borderRadius: '4px', border: '1px solid #1e2030' }}>
+          <div className="font-orbitron" style={{ fontSize: '11px', color: '#00f0ff', letterSpacing: '0.15em', marginBottom: '12px' }}>
+            CIRCADIAN OVERRIDE
+          </div>
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-end' }}>
+            <div style={{ flex: 1 }}>
+              <label style={{ fontSize: '10px', color: '#8892a0', display: 'block', marginBottom: '6px', fontFamily: 'Share Tech Mono, monospace' }}>
+                PROTOCOL DAY END TIME ({(() => {
+                  const [h, m] = dayEndTimeInput.split(':');
+                  const hh = parseInt(h);
+                  const suffix = hh >= 12 ? 'PM' : 'AM';
+                  const h12 = hh % 12 || 12;
+                  return `${h12}:${m} ${suffix}`;
+                })()})
+              </label>
+              <input
+                className="input-field font-mono"
+                type="time"
+                value={dayEndTimeInput}
+                onChange={e => setDayEndTimeInput(e.target.value)}
+                style={{ 
+                  borderColor: timeSuccess ? '#00f0ff' : '#1e2030',
+                  boxShadow: timeSuccess ? '0 0 10px rgba(0,240,255,0.3)' : 'none',
+                  transition: 'all 0.3s',
+                  color: '#00f0ff'
+                }}
+              />
+            </div>
+            <button 
+              className="btn btn-solid-blue"
+              onClick={handleUpdateTime}
+              style={{ background: timeSuccess ? '#00f0ff' : undefined, color: timeSuccess ? '#000' : undefined, padding: '10px 16px' }}
+            >
+              {timeSuccess ? 'SYNCHRONIZED' : 'UPDATE CLOCK'}
+            </button>
+          </div>
+          <div style={{ fontSize: '10px', color: '#555', marginTop: '8px', fontFamily: 'Share Tech Mono, monospace' }}>
+            * Defines when daily missions reset. Recommended for late-night operators.
+          </div>
+        </div>
+
 
         {/* Protocol Zero (Total Wipe) */}
         <div style={{ background: '#0a0b10', padding: '16px', borderRadius: '4px', border: '1px solid rgba(255,0,60,0.3)' }}>

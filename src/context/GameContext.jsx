@@ -3,6 +3,7 @@ import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, getDoc, setDoc, updateDoc, deleteDoc, collection, onSnapshot, writeBatch } from 'firebase/firestore';
 import { auth, db } from '../firebase';
 import Login from '../components/Login';
+import { getSystemNow, formatDateStr } from '../utils/schedule';
 
 // ─── Default State ───────────────────────────────────────────────────────────
 const DEFAULT_STATE = {
@@ -20,6 +21,7 @@ const DEFAULT_STATE = {
     sbiSavingsMandate: 0,
     lastPerfectDayCheck: '',
     perfectDayAchieved: false,
+    dayEndTime: '00:00',
   },
   masterTasks: [],
   shopItems: [],
@@ -553,13 +555,16 @@ export function GameProvider({ children }) {
 
   const evaluatePerfectDay = useCallback(async () => {
     if (!user) return;
-    const todayStr = new Date().toISOString().split('T')[0];
-    if (state.playerStats.lastPerfectDayCheck === todayStr) return;
+    const { dayEndTime, lastPerfectDayCheck, hp } = state.playerStats;
+    const systemNow = getSystemNow(dayEndTime);
+    const todayStr = formatDateStr(systemNow);
+    
+    if (lastPerfectDayCheck === todayStr) return;
 
-    // Get yesterday's date string
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayStr = yesterday.toISOString().split('T')[0];
+    // Get yesterday's date string in system time
+    const systemYesterday = new Date(systemNow);
+    systemYesterday.setDate(systemYesterday.getDate() - 1);
+    const yesterdayStr = formatDateStr(systemYesterday);
 
     // Identify tasks considered "pending" for yesterday (Daily or Once-Deadline-Yesterday)
     const dailyMissions = state.masterTasks.filter(t => {
@@ -578,9 +583,8 @@ export function GameProvider({ children }) {
       return history.some(h => h.date === yesterdayStr && h.status === 'completed');
     });
 
-    const updates = { 'playerStats.lastPerfectDayCheck': todayStr };
     if (allDone) {
-      updates['playerStats.hp'] = Number(Math.min(100, state.playerStats.hp + 15).toFixed(1));
+      updates['playerStats.hp'] = Number(Math.min(100, hp + 15).toFixed(1));
       updates['playerStats.perfectDayAchieved'] = true;
       triggerCelebration('🌟 PERFECT DAY BUFF: +15 HP!', 'gold');
     } else {
@@ -589,6 +593,11 @@ export function GameProvider({ children }) {
 
     await updateDoc(doc(db, 'users', user.uid), updates);
   }, [user, state.playerStats, state.masterTasks, triggerCelebration]);
+
+  const setDayEndTime = useCallback(async (time) => {
+    if (!user) return;
+    await updateDoc(doc(db, 'users', user.uid), { 'playerStats.dayEndTime': time });
+  }, [user]);
 
   // Run perfect day check on mount/user change
   useEffect(() => {
@@ -700,6 +709,7 @@ export function GameProvider({ children }) {
     executeProtocolZero,
     triggerCelebration,
     triggerScreenShake,
+    setDayEndTime,
     isShaking,
     setState, // Expose raw setState for optimistic UI or edge cases if needed
   };
