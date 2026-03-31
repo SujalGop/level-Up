@@ -82,6 +82,7 @@ export default function Milestones() {
                 value={form[stat]}
                 onChange={e => setForm(f => ({ ...f, [stat]: e.target.value }))}
                 min="0"
+                step="0.1"
                 style={{ padding: '6px 10px' }}
               />
             </div>

@@ -44,7 +44,7 @@ export default function Shop() {
             THE <span style={{ color: '#ffd700' }}>SHOP</span>
           </h1>
           <div style={{ marginTop: '8px', display: 'flex', gap: '8px', alignItems: 'center' }}>
-            <span className="stat-badge tag-gold">{gold.toLocaleString()}G AVAILABLE</span>
+            <span className="stat-badge tag-gold">{gold.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}G AVAILABLE</span>
             {isBankrupt && (
               <span style={{ fontSize: '11px', color: '#ff003c', fontFamily: 'Share Tech Mono, monospace', fontWeight: 700, animation: 'pulse-red 1.5s ease-in-out infinite' }}>
                 ⚠ BANKRUPT
@@ -162,22 +162,22 @@ export default function Shop() {
                   <div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#8892a0', marginBottom: '4px' }}>
                       <span>Sunk Cost</span>
-                      <span className="font-mono" style={{ color: '#ffd700' }}>{item.baseCost.toLocaleString()}G</span>
+                      <span className="font-mono" style={{ color: '#ffd700' }}>{item.baseCost.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}G</span>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#8892a0', marginBottom: '4px' }}>
                       <span>Savings Match</span>
-                      <span className="font-mono" style={{ color: '#bf5fff' }}>{item.baseCost.toLocaleString()}G</span>
+                      <span className="font-mono" style={{ color: '#bf5fff' }}>{item.baseCost.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}G</span>
                     </div>
                     <div style={{ height: '1px', background: '#1e2030', margin: '8px 0' }} />
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', fontWeight: 700 }}>
                       <span style={{ color: '#e8eaf0' }}>TOTAL</span>
-                      <span className="font-mono" style={{ color: '#ffd700' }}>{totalCost.toLocaleString()}G</span>
+                      <span className="font-mono" style={{ color: '#ffd700' }}>{totalCost.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}G</span>
                     </div>
                   </div>
                 ) : (
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', fontWeight: 700 }}>
                     <span style={{ color: '#8892a0' }}>COST</span>
-                    <span className="font-mono" style={{ color: '#ffd700' }}>{item.baseCost.toLocaleString()}G</span>
+                    <span className="font-mono" style={{ color: '#ffd700' }}>{item.baseCost.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}G</span>
                   </div>
                 )}
               </div>
@@ -203,7 +203,7 @@ export default function Shop() {
 
               {!affordable && (
                 <div style={{ marginTop: '8px', fontSize: '11px', color: '#8892a0', fontFamily: 'Share Tech Mono, monospace' }}>
-                  Need {(totalCost - gold).toLocaleString()}G more
+                  Need {(totalCost - gold).toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}G more
                 </div>
               )}
             </motion.div>
@@ -244,11 +244,11 @@ export default function Shop() {
               </div>
             ) : confirmItem.isLuxury ? (
               <div style={{ fontSize: '13px', color: '#8892a0', lineHeight: 1.6, padding: '12px', background: 'rgba(191,95,255,0.06)', border: '1px solid rgba(191,95,255,0.2)', borderRadius: '3px' }}>
-                <strong style={{ color: '#bf5fff' }}>100% MATCH RULE:</strong> {confirmItem.baseCost.toLocaleString()}G sunk cost + {confirmItem.baseCost.toLocaleString()}G mandatory savings deposit = <strong style={{ color: '#ffd700' }}>{(confirmItem.baseCost * 2).toLocaleString()}G total</strong>
+                <strong style={{ color: '#bf5fff' }}>100% MATCH RULE:</strong> {confirmItem.baseCost.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}G sunk cost + {confirmItem.baseCost.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}G mandatory savings deposit = <strong style={{ color: '#ffd700' }}>{(confirmItem.baseCost * 2).toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}G total</strong>
               </div>
             ) : (
               <div style={{ fontSize: '13px', color: '#8892a0', lineHeight: 1.6 }}>
-                <strong style={{ color: '#ffd700' }}>{confirmItem.baseCost.toLocaleString()}G</strong> will be deducted and routed to your SBI savings vault.
+                <strong style={{ color: '#ffd700' }}>{confirmItem.baseCost.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}G</strong> will be deducted and routed to your SBI savings vault.
               </div>
             )}
             <div style={{ display: 'flex', gap: '8px' }}>
@@ -290,7 +290,8 @@ export default function Shop() {
               type="number"
               value={newItem.baseCost}
               onChange={e => setNewItem(n => ({ ...n, baseCost: e.target.value }))}
-              min="1"
+              min="0"
+              step="0.1"
             />
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -330,8 +331,9 @@ export default function Shop() {
                   type="number"
                   value={newItem.hpAmount}
                   onChange={e => setNewItem(n => ({ ...n, hpAmount: e.target.value }))}
-                  min="1"
+                  min="0"
                   max="100"
+                  step="0.1"
                 />
               </motion.div>
             )}

@@ -215,7 +215,7 @@ export default function Dashboard() {
                   {cls}
                 </div>
                 <div style={{ fontSize: '12px', color: '#8892a0', fontFamily: 'Share Tech Mono, monospace' }}>
-                  TOTAL STATS: {totalStats}
+                  TOTAL STATS: {totalStats.toFixed(1)}
                 </div>
               </div>
             </div>
@@ -232,7 +232,7 @@ export default function Dashboard() {
                 <div key={threshold.class}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
                     <span style={{ fontSize: '11px', color: '#00f0ff', fontFamily: 'Share Tech Mono, monospace' }}>{threshold.class}</span>
-                    <span style={{ fontSize: '11px', color: '#8892a0', fontFamily: 'Share Tech Mono, monospace' }}>{totalStats}/{threshold.total}</span>
+                    <span style={{ fontSize: '11px', color: '#8892a0', fontFamily: 'Share Tech Mono, monospace' }}>{totalStats.toFixed(1)}/{threshold.total}</span>
                   </div>
                   <div className="progress-bar-track">
                     <div className="progress-bar-fill" style={{ width: `${pct}%`, background: 'linear-gradient(90deg, #0066ff, #00f0ff)' }} />
@@ -270,7 +270,7 @@ export default function Dashboard() {
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: '11px', color: '#ff003c', fontFamily: 'Orbitron, monospace', letterSpacing: '0.1em', marginBottom: '4px' }}>SBI MANDATE</div>
                 <div className="font-mono" style={{ fontSize: '32px', fontWeight: 700, color: '#ff003c', textShadow: '0 0 12px rgba(255,0,60,0.6)' }}>
-                  ₹{sbiSavingsMandate.toLocaleString()}
+                  ₹{sbiSavingsMandate.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
                 </div>
                 <div style={{ fontSize: '10px', color: '#ff6680', marginTop: '4px' }}>
                   TRANSFER TO BANK
@@ -300,7 +300,7 @@ export default function Dashboard() {
                     lineHeight: 1,
                   }}
                 >
-                  {hp}
+                  {hp.toFixed(1)}
                 </div>
                 <div style={{ fontSize: '11px', color: '#8892a0', fontFamily: 'Share Tech Mono, monospace' }}>/100 HP</div>
               </div>

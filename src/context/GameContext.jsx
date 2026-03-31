@@ -267,20 +267,20 @@ export function GameProvider({ children }) {
     const newStats = { ...state.playerStats };
 
     if (status === 'completed') {
-      const goldGain = Math.floor(task.goldReward * multiplier);
+      const goldGain = Number((task.goldReward * multiplier).toFixed(1));
       let nextGold = newStats.gold + goldGain;
       
       if (newStats.goldCap > 0 && nextGold > newStats.goldCap) {
         nextGold = newStats.goldCap;
       }
       
-      newStats.gold = nextGold;
+      newStats.gold = Number(nextGold.toFixed(1));
       Object.entries(task.statReward || {}).forEach(([stat, val]) => {
-        newStats[stat] = (newStats[stat] || 0) + Math.floor(val * multiplier);
+        newStats[stat] = Number(((newStats[stat] || 0) + val * multiplier).toFixed(1));
       });
       
       if (task.hpReward) {
-        newStats.hp = Math.min(100, newStats.hp + Math.floor(task.hpReward * multiplier));
+        newStats.hp = Number(Math.min(100, newStats.hp + task.hpReward * multiplier).toFixed(1));
       }
 
       if (newStats.VIT >= 30 && newStats.hp >= 50) {
@@ -288,7 +288,7 @@ export function GameProvider({ children }) {
       }
     } else if (status === 'failed') {
       const penalty = task.hpPenalty || 20;
-      newStats.hp = Math.max(0, newStats.hp - penalty);
+      newStats.hp = Number(Math.max(0, newStats.hp - penalty).toFixed(1));
       if (newStats.hp < 50 && !newStats.burnoutDebuff) {
         newStats.burnoutDebuff = true;
         triggerCelebration('💀 BURNOUT DEBUFF ACTIVATED!', 'red');
@@ -325,7 +325,7 @@ export function GameProvider({ children }) {
   const triggerPenalty = useCallback(async (amount) => {
     if (!user) return;
     await routeTaxToVault(amount); // This will handle gold & mandate via batch
-    const newHP = Math.max(0, state.playerStats.hp - Math.floor(amount / 20));
+    const newHP = Number(Math.max(0, state.playerStats.hp - (amount / 20)).toFixed(1));
     await updateDoc(doc(db, 'users', user.uid), { 'playerStats.hp': newHP });
   }, [user, routeTaxToVault, state.playerStats]);
 
@@ -357,7 +357,7 @@ export function GameProvider({ children }) {
   // ─── Dungeon Actions ─────────────────────────────────────────────────────────
   const completeDungeon = useCallback(async (minutes) => {
     if (!user) return;
-    const intGain = Math.floor(minutes / 10);
+    const intGain = Number((minutes / 10).toFixed(1));
     const goldGain = minutes * 2;
     
     let nextGold = state.playerStats.gold + goldGain;
@@ -366,8 +366,8 @@ export function GameProvider({ children }) {
     }
 
     await updateDoc(doc(db, 'users', user.uid), {
-      'playerStats.INT': state.playerStats.INT + intGain,
-      'playerStats.gold': nextGold,
+      'playerStats.INT': Number((state.playerStats.INT + intGain).toFixed(1)),
+      'playerStats.gold': Number(nextGold.toFixed(1)),
     });
     triggerCelebration(`⚔️ DUNGEON CLEARED! +${intGain} INT +${goldGain}G`, 'blue');
   }, [user, state.playerStats, triggerCelebration]);
@@ -445,14 +445,14 @@ export function GameProvider({ children }) {
 
     const newStats = { ...state.playerStats };
     Object.entries(milestone.statReward).forEach(([stat, val]) => {
-      newStats[stat] = (newStats[stat] || 0) + val;
+      newStats[stat] = Number(((newStats[stat] || 0) + val).toFixed(1));
     });
     const goldGain = 500;
     let nextGold = newStats.gold + goldGain;
     if (newStats.goldCap > 0 && nextGold > newStats.goldCap) {
       nextGold = newStats.goldCap;
     }
-    newStats.gold = nextGold;
+    newStats.gold = Number(nextGold.toFixed(1));
 
     const batch = writeBatch(db);
     batch.update(doc(db, 'users', user.uid), { playerStats: newStats });
@@ -500,7 +500,7 @@ export function GameProvider({ children }) {
   // ─── HP & Burnout ────────────────────────────────────────────────────────────
   const updateHP = useCallback(async (delta) => {
     if (!user) return;
-    const newHP = Math.max(0, Math.min(100, state.playerStats.hp + delta));
+    const newHP = Number(Math.max(0, Math.min(100, state.playerStats.hp + delta)).toFixed(1));
     const burnout = newHP < 50;
 
     await updateDoc(doc(db, 'users', user.uid), {
@@ -542,7 +542,7 @@ export function GameProvider({ children }) {
 
     const updates = { 'playerStats.lastPerfectDayCheck': todayStr };
     if (allDone) {
-      updates['playerStats.hp'] = Math.min(100, state.playerStats.hp + 15);
+      updates['playerStats.hp'] = Number(Math.min(100, state.playerStats.hp + 15).toFixed(1));
       updates['playerStats.perfectDayAchieved'] = true;
       triggerCelebration('🌟 PERFECT DAY BUFF: +15 HP!', 'gold');
     } else {

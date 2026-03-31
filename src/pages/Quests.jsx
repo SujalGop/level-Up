@@ -412,15 +412,15 @@ export default function Quests() {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
         <div>
           <label style={{ fontSize: '11px', color: '#8892a0', fontFamily: 'Orbitron, monospace', letterSpacing: '0.15em', display: 'block', marginBottom: '6px' }}>GOLD REWARD</label>
-          <input className="input-field" type="number" min="0" value={formData.goldReward} onChange={e => setFormData(f => ({ ...f, goldReward: e.target.value }))} style={{ borderColor: 'rgba(255,215,0,0.3)' }} />
+          <input className="input-field" type="number" min="0" step="0.1" value={formData.goldReward} onChange={e => setFormData(f => ({ ...f, goldReward: e.target.value }))} style={{ borderColor: 'rgba(255,215,0,0.3)' }} />
         </div>
         <div>
           <label style={{ fontSize: '11px', color: '#00ff88', fontFamily: 'Orbitron, monospace', letterSpacing: '0.15em', display: 'block', marginBottom: '6px' }}>HP RECOVERY</label>
-          <input className="input-field" type="number" min="0" value={formData.hpReward} onChange={e => setFormData(f => ({ ...f, hpReward: e.target.value }))} style={{ borderColor: 'rgba(0,255,136,0.3)' }} />
+          <input className="input-field" type="number" min="0" step="0.1" value={formData.hpReward} onChange={e => setFormData(f => ({ ...f, hpReward: e.target.value }))} style={{ borderColor: 'rgba(0,255,136,0.3)' }} />
         </div>
         <div style={{ gridColumn: 'span 2' }}>
           <label style={{ fontSize: '11px', color: '#ff003c', fontFamily: 'Orbitron, monospace', letterSpacing: '0.15em', display: 'block', marginBottom: '6px' }}>HP PENALTY</label>
-          <input className="input-field" type="number" min="0" value={formData.hpPenalty} onChange={e => setFormData(f => ({ ...f, hpPenalty: e.target.value }))} style={{ borderColor: 'rgba(255,0,60,0.3)' }} />
+          <input className="input-field" type="number" min="0" step="0.1" value={formData.hpPenalty} onChange={e => setFormData(f => ({ ...f, hpPenalty: e.target.value }))} style={{ borderColor: 'rgba(255,0,60,0.3)' }} />
         </div>
       </div>
 
@@ -430,7 +430,7 @@ export default function Quests() {
           {['INT', 'STR', 'VIT', 'PER'].map(stat => (
             <div key={stat}>
               <label style={{ fontSize: '10px', color: STAT_COLORS[stat], fontFamily: 'Share Tech Mono, monospace', display: 'block', marginBottom: '4px' }}>{stat}</label>
-              <input className="input-field" type="number" min="0" value={formData[stat]} onChange={e => setFormData(f => ({ ...f, [stat]: e.target.value }))} style={{ padding: '6px 4px', textAlign: 'center' }} />
+              <input className="input-field" type="number" min="0" step="0.1" value={formData[stat]} onChange={e => setFormData(f => ({ ...f, [stat]: e.target.value }))} style={{ padding: '6px 4px', textAlign: 'center' }} />
             </div>
           ))}
         </div>
@@ -664,7 +664,8 @@ export default function Quests() {
               value={penaltyAmount}
               onChange={e => setPenaltyAmount(e.target.value)}
               placeholder="e.g. 100"
-              min="1"
+              min="0"
+              step="0.1"
               style={{ borderColor: 'rgba(255,0,60,0.4)' }}
             />
           </div>

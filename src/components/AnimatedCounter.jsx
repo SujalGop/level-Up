@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { motion, useSpring, useTransform, useMotionValueEvent } from 'framer-motion';
 import { cn } from '../utils/cn';
 
-export default function AnimatedCounter({ value, className, prefix = '', suffix = '' }) {
+export default function AnimatedCounter({ value, className, prefix = '', suffix = '', decimals = 1 }) {
   const [isChanging, setIsChanging] = useState(false);
 
   // Rapid spring config (no bounce, aggressive snapping to target)
@@ -20,8 +20,11 @@ export default function AnimatedCounter({ value, className, prefix = '', suffix 
   // Hook into the spring to know if we are currently animating numbers.
   // When animating, change text to orange.
   useMotionValueEvent(spring, 'change', (latest) => {
-    // Round difference to avoid floating point micro-changes
-    if (Math.abs(Math.round(latest) - value) > 0) {
+    // Check difference at the specified precision
+    const diff = Math.abs(latest - value);
+    const threshold = 1 / Math.pow(10, decimals + 1); // small threshold for floats
+    
+    if (diff > threshold) {
       if (!isChanging) setIsChanging(true);
     } else {
       if (isChanging) setIsChanging(false);
@@ -30,7 +33,10 @@ export default function AnimatedCounter({ value, className, prefix = '', suffix 
 
   // Calculate formatted output
   const displayValue = useTransform(spring, (current) => {
-    return prefix + Math.round(current).toLocaleString() + suffix;
+    return prefix + current.toLocaleString(undefined, { 
+      minimumFractionDigits: decimals, 
+      maximumFractionDigits: decimals 
+    }) + suffix;
   });
 
   return (

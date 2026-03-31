@@ -79,9 +79,9 @@ export default function Vault() {
         style={{ marginBottom: '32px' }}
       >
         {[
-          { label: 'TOTAL SAVED', value: `${totalSaved.toLocaleString()}G`, color: '#00ff88' },
-          { label: 'TOTAL TARGET', value: `${totalTarget.toLocaleString()}G`, color: '#8892a0' },
-          { label: 'SBI MANDATE', value: `₹${sbiSavingsMandate.toLocaleString()}`, color: '#ff003c', sub: 'TRANSFER TO BANK' },
+          { label: 'TOTAL SAVED', value: `${totalSaved.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}G`, color: '#00ff88' },
+          { label: 'TOTAL TARGET', value: `${totalTarget.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}G`, color: '#8892a0' },
+          { label: 'SBI MANDATE', value: `₹${sbiSavingsMandate.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}`, color: '#ff003c', sub: 'TRANSFER TO BANK' },
         ].map(item => (
           <div
             key={item.label}
@@ -109,7 +109,7 @@ export default function Vault() {
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
             <span style={{ fontSize: '11px', color: '#8892a0', fontFamily: 'Orbitron, monospace', letterSpacing: '0.15em' }}>OVERALL PROGRESS</span>
             <span style={{ fontSize: '11px', color: '#00ff88', fontFamily: 'Share Tech Mono, monospace' }}>
-              {Math.floor((totalSaved / totalTarget) * 100)}%
+              {((totalSaved / totalTarget) * 100).toFixed(1)}%
             </span>
           </div>
           <div style={{ height: '6px', background: '#111318', border: '1px solid #1e2030', borderRadius: '3px', overflow: 'hidden' }}>
@@ -207,11 +207,11 @@ export default function Vault() {
                 {/* Progress */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
                   <span className="font-mono" style={{ fontSize: '14px', color: barColor, fontWeight: 700 }}>
-                    {goal.currentGold.toLocaleString()}G
+                    {goal.currentGold.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}G
                   </span>
                   <span className="font-mono" style={{ fontSize: '14px', color: '#8892a0' }}>
-                    / {goal.targetGold.toLocaleString()}G &nbsp;
-                    <span style={{ color: barColor }}>{Math.floor(pct)}%</span>
+                    / {goal.targetGold.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}G &nbsp;
+                    <span style={{ color: barColor }}>{pct.toFixed(1)}%</span>
                   </span>
                 </div>
 
@@ -240,7 +240,7 @@ export default function Vault() {
 
                 {!goal.isAchieved && (
                   <div style={{ marginTop: '8px', fontSize: '11px', color: '#8892a0', fontFamily: 'Share Tech Mono, monospace' }}>
-                    {(goal.targetGold - goal.currentGold).toLocaleString()}G remaining
+                    {(goal.targetGold - goal.currentGold).toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}G remaining
                   </div>
                 )}
               </motion.div>
@@ -255,7 +255,7 @@ export default function Vault() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <div style={{ fontSize: '14px', fontWeight: 600, color: '#00ff88' }}>{depositTarget.title}</div>
             <div style={{ fontSize: '12px', color: '#8892a0' }}>
-              Current: <strong style={{ color: '#e8eaf0' }}>{depositTarget.currentGold.toLocaleString()}G</strong> / {depositTarget.targetGold.toLocaleString()}G
+              Current: <strong style={{ color: '#e8eaf0' }}>{depositTarget.currentGold.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}G</strong> / {depositTarget.targetGold.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}G
             </div>
             <div style={{ fontSize: '12px', color: '#8892a0' }}>
               Available Gold: <strong className="font-mono" style={{ color: '#ffd700' }}><AnimatedCounter value={gold} suffix="G" /></strong>
@@ -270,7 +270,8 @@ export default function Vault() {
                 value={depositAmount}
                 onChange={e => setDepositAmount(e.target.value)}
                 placeholder="Enter Gold amount..."
-                min="1"
+                min="0"
+                step="0.1"
                 autoFocus
               />
             </div>
@@ -307,7 +308,7 @@ export default function Vault() {
             <label style={{ fontSize: '11px', color: '#8892a0', fontFamily: 'Orbitron, monospace', letterSpacing: '0.15em', display: 'block', marginBottom: '6px' }}>
               TARGET GOLD
             </label>
-            <input className="input-field" type="number" value={form.targetGold} onChange={e => setForm(f => ({ ...f, targetGold: e.target.value }))} min="1" />
+            <input className="input-field" type="number" value={form.targetGold} onChange={e => setForm(f => ({ ...f, targetGold: e.target.value }))} min="0" step="0.1" />
           </div>
           <div>
             <label style={{ fontSize: '11px', color: '#8892a0', fontFamily: 'Orbitron, monospace', letterSpacing: '0.15em', display: 'block', marginBottom: '6px' }}>

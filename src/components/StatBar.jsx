@@ -31,7 +31,7 @@ export default function StatBar({ stat, value, max = 999 }) {
             textShadow: `0 0 8px ${config.color}`,
           }}
         >
-          {value}
+          {value.toFixed(1)}
         </span>
       </div>
       <div

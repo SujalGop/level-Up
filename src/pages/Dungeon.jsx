@@ -235,7 +235,7 @@ export default function Dungeon() {
         <div style={{ textAlign: 'center' }}>
           <div style={{ fontSize: '10px', color: '#8892a0', fontFamily: 'Orbitron, monospace', letterSpacing: '0.15em', marginBottom: '4px' }}>INT GAIN</div>
           <div className="font-mono glow-blue" style={{ fontSize: '22px', color: '#00f0ff', fontWeight: 700 }}>
-            +{Math.floor(durationMins / 10)}
+            +{(durationMins / 10).toFixed(1)}
           </div>
         </div>
         <div style={{ width: '1px', background: '#1e2030' }} />
@@ -299,6 +299,7 @@ export default function Dungeon() {
               onChange={e => setPenaltyAmt(e.target.value)}
               placeholder="0"
               min="0"
+              step="0.1"
               style={{ borderColor: 'rgba(255,0,60,0.4)' }}
               autoFocus
             />

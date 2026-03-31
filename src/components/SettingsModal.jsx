@@ -75,6 +75,7 @@ export default function SettingsModal({ isOpen, onClose }) {
                 type="number"
                 value={goldInput}
                 onChange={e => setGoldInput(e.target.value)}
+                step="0.1"
                 style={{ 
                   borderColor: goldSuccess ? '#00ff88' : '#1e2030',
                   boxShadow: goldSuccess ? '0 0 10px rgba(0,255,136,0.3)' : 'none',
@@ -108,6 +109,7 @@ export default function SettingsModal({ isOpen, onClose }) {
                 value={goldCapInput}
                 onChange={e => setGoldCapInput(e.target.value)}
                 placeholder="Set 0 for No Limit"
+                step="0.1"
                 style={{ 
                   borderColor: capSuccess ? '#ffd700' : '#1e2030',
                   boxShadow: capSuccess ? '0 0 10px rgba(255,215,0,0.3)' : 'none',
