@@ -583,6 +583,7 @@ export function GameProvider({ children }) {
       return history.some(h => h.date === yesterdayStr && h.status === 'completed');
     });
 
+    const updates = { 'playerStats.lastPerfectDayCheck': todayStr };
     if (allDone) {
       updates['playerStats.hp'] = Number(Math.min(100, hp + 15).toFixed(1));
       updates['playerStats.perfectDayAchieved'] = true;

@@ -141,10 +141,11 @@ const QuestCard = ({ task, selectedDate, onComplete, onFail, onUndo, onEdit, onD
 
 export default function Quests() {
   const {
+    masterTasks, playerStats, resolveTask, undoTask,
     addMasterTask, editMasterTask, deleteMasterTask, triggerPenalty, triggerScreenShake,
   } = useGame();
 
-  const { burnoutDebuff, dayEndTime } = playerStats;
+  const { burnoutDebuff, dayEndTime } = playerStats || { burnoutDebuff: false, dayEndTime: '00:00' };
 
   const [selectedDate, setSelectedDate] = useState(() => getSystemNow(dayEndTime));
   

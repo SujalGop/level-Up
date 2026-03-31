@@ -4,6 +4,7 @@ import { format, parseISO, isSameDay, startOfWeek, endOfWeek, isWithinInterval, 
  * Formats a Date object to YYYY-MM-DD local time string.
  */
 export function formatDateStr(date) {
+  if (!(date instanceof Date) || isNaN(date)) return format(new Date(), 'yyyy-MM-dd');
   return format(date, 'yyyy-MM-dd');
 }
 
@@ -13,9 +14,10 @@ export function formatDateStr(date) {
  */
 export function getSystemNow(dayEndTime = "00:00") {
   const now = new Date();
-  const [endHour, endMinute] = (dayEndTime || "00:00").split(':').map(Number);
+  const timeStr = dayEndTime || "00:00";
+  const [endHour, endMinute] = timeStr.includes(':') ? timeStr.split(':').map(Number) : [0, 0];
   
-  if (now.getHours() < endHour || (now.getHours() === endHour && now.getMinutes() < endMinute)) {
+  if (now.getHours() < (endHour || 0) || (now.getHours() === endHour && now.getMinutes() < (endMinute || 0))) {
     return subDays(now, 1);
   }
   return now;
