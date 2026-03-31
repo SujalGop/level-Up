@@ -10,7 +10,7 @@ import PageTransition from '../components/PageTransition';
 const STAT_COLORS = { INT: '#00f0ff', STR: '#ff003c', VIT: '#00ff88', PER: '#bf5fff' };
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-const QuestCard = ({ task, selectedDate, onComplete, onFail, onEdit, onDelete, isSecondary = false }) => (
+const QuestCard = ({ task, selectedDate, onComplete, onFail, onUndo, onEdit, onDelete, isSecondary = false, isDone = false }) => (
   <motion.div
     key={task.id}
     initial={{ opacity: 0, y: 10 }}
@@ -92,27 +92,41 @@ const QuestCard = ({ task, selectedDate, onComplete, onFail, onEdit, onDelete, i
 
       {/* Right: Actions */}
       <div style={{ display: 'flex', gap: '8px' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-          <button
-            className="btn btn-solid-blue"
-            style={{
-              background: '#00ff88', color: '#000', padding: '8px 16px', fontSize: '12px',
-              boxShadow: '0 0 10px rgba(0,255,136,0.3)'
-            }}
-            onClick={(e) => onComplete(e, task)}
-          >
-            ✔ COMPLETE
-          </button>
-          <button
-            className="btn"
-            style={{
-              background: 'rgba(255,0,60,0.1)', color: '#ff003c', border: '1px solid #ff003c', padding: '6px 16px', fontSize: '11px',
-            }}
-            onClick={() => onFail(task)}
-          >
-            ✖ FAIL
-          </button>
-        </div>
+        {isDone ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+             <button
+              className="btn btn-blue"
+              style={{
+                background: 'rgba(0,240,255,0.1)', color: '#00f0ff', border: '1px solid #00f0ff', padding: '8px 16px', fontSize: '12px',
+              }}
+              onClick={() => onUndo(task)}
+            >
+              ↩ UNDO action
+            </button>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            <button
+              className="btn btn-solid-blue"
+              style={{
+                background: '#00ff88', color: '#000', padding: '8px 16px', fontSize: '12px',
+                boxShadow: '0 0 10px rgba(0,255,136,0.3)'
+              }}
+              onClick={(e) => onComplete(e, task)}
+            >
+              ✔ COMPLETE
+            </button>
+            <button
+              className="btn"
+              style={{
+                background: 'rgba(255,0,60,0.1)', color: '#ff003c', border: '1px solid #ff003c', padding: '6px 16px', fontSize: '11px',
+              }}
+              onClick={() => onFail(task)}
+            >
+              ✖ FAIL
+            </button>
+          </div>
+        )}
         
         {/* Secondary Actions (Edit/Delete) */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', borderLeft: '1px solid #1e2030', paddingLeft: '8px', marginLeft: '4px' }}>
@@ -127,7 +141,7 @@ const QuestCard = ({ task, selectedDate, onComplete, onFail, onEdit, onDelete, i
 
 export default function Quests() {
   const {
-    masterTasks, playerStats, resolveTask,
+    masterTasks, playerStats, resolveTask, undoTask,
     addMasterTask, editMasterTask, deleteMasterTask, triggerPenalty, triggerScreenShake,
   } = useGame();
 
@@ -155,13 +169,19 @@ export default function Quests() {
   const todayStr = formatDateStr(new Date());
   const isToday = selectedDateStr === todayStr;
 
+  // Split tasks into Active and Done
   const allActiveTasks = (masterTasks || []).filter(task => isTaskActiveOnDate(task, selectedDate));
-  
-  // Per user request: separate into "Pending" and "Other"
+  const doneTasks = (masterTasks || []).filter(task => {
+    // A task is "done" if it has any logs today, and is either finished (not active) OR we just want to see it in log
+    // User asked for "tasks that are done" in a different section.
+    // Let's show tasks that have at least one log entry for selected date.
+    return (task.history || []).some(h => h.date === selectedDateStr);
+  });
+
   const pendingTasks = allActiveTasks.filter(task => isTaskPendingForDate(task, selectedDate));
   const otherActiveTasks = allActiveTasks.filter(task => !isTaskPendingForDate(task, selectedDate));
 
-  // Group other active tasks by recurrenceType for sectional display
+  // Group other active tasks by recurrenceType
   const groupedOtherTasks = otherActiveTasks.reduce((acc, task) => {
     const type = task.recurrenceType || 'other';
     if (!acc[type]) acc[type] = [];
@@ -209,6 +229,10 @@ export default function Quests() {
   const handleTaskFail = (task) => {
     triggerScreenShake();
     resolveTask(task.id, formatDateStr(selectedDate), 'failed');
+  };
+
+  const handleTaskUndo = (task) => {
+    undoTask(task.id, formatDateStr(selectedDate));
   };
 
   function openAdd() {
@@ -638,6 +662,34 @@ export default function Quests() {
                 </div>
               </div>
             ))}
+
+            {/* DONE TASKS SECTION */}
+            {doneTasks.length > 0 && (
+              <div style={{ marginTop: '48px' }}>
+                <div style={{ 
+                  fontSize: '11px', color: '#00ff88', fontFamily: 'Orbitron, monospace', letterSpacing: '0.2em', 
+                  marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '12px'
+                }}>
+                  <div style={{ flex: 1, height: '1px', background: 'linear-gradient(90deg, transparent, rgba(0,255,136,0.3))' }} />
+                  MISSION LOGS
+                  <div style={{ flex: 1, height: '1px', background: 'linear-gradient(90deg, rgba(0,255,136,0.3), transparent)' }} />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', opacity: 0.8 }}>
+                  {doneTasks.map((task) => (
+                    <QuestCard
+                      key={`${task.id}-done`}
+                      task={task}
+                      selectedDate={selectedDate}
+                      onUndo={handleTaskUndo}
+                      onEdit={openEdit}
+                      onDelete={deleteMasterTask}
+                      isDone={true}
+                      isSecondary={true}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

@@ -306,6 +306,44 @@ export function GameProvider({ children }) {
     await batch.commit();
   }, [user, state.playerStats, state.masterTasks, triggerCelebration]);
 
+  const undoTask = useCallback(async (taskId, dateString) => {
+    if (!user) return;
+    const task = state.masterTasks.find(t => t.id === taskId);
+    if (!task || !task.history) return;
+
+    // Find the last entry for this date
+    const history = [...task.history];
+    const logIndex = history.map((h, i) => ({ ...h, i })).filter(h => h.date === dateString).pop()?.i;
+    
+    if (logIndex === undefined) return;
+    const [removedLog] = history.splice(logIndex, 1);
+    
+    const multiplier = state.playerStats.burnoutDebuff ? 0.5 : 1;
+    const newStats = { ...state.playerStats };
+
+    if (removedLog.status === 'completed') {
+      const goldGain = Number((task.goldReward * multiplier).toFixed(1));
+      newStats.gold = Number(Math.max(0, newStats.gold - goldGain).toFixed(1));
+      
+      Object.entries(task.statReward || {}).forEach(([stat, val]) => {
+        newStats[stat] = Number(Math.max(0, (newStats[stat] || 0) - val * multiplier).toFixed(1));
+      });
+      
+      if (task.hpReward) {
+        newStats.hp = Number(Math.max(0, newStats.hp - task.hpReward * multiplier).toFixed(1));
+      }
+    } else if (removedLog.status === 'failed') {
+      const penalty = task.hpPenalty || 20;
+      newStats.hp = Number(Math.min(100, newStats.hp + penalty).toFixed(1));
+    }
+
+    const newTaskData = { ...task, history };
+    const batch = writeBatch(db);
+    batch.update(doc(db, 'users', user.uid), { playerStats: newStats });
+    batch.set(doc(db, `users/${user.uid}/masterTasks`, taskId.toString()), newTaskData);
+    await batch.commit();
+  }, [user, state.masterTasks, state.playerStats]);
+
   const addMasterTask = useCallback(async (task) => {
     if (!user) return;
     const id = Date.now().toString();
@@ -633,6 +671,7 @@ export function GameProvider({ children }) {
     routeTaxToVault,
     voluntaryDeposit,
     resolveTask,
+    undoTask,
     addMasterTask,
     editMasterTask,
     deleteMasterTask,
