@@ -5,8 +5,11 @@ import { cn } from '../utils/cn';
 export default function AnimatedCounter({ value, className, prefix = '', suffix = '', decimals = 1 }) {
   const [isChanging, setIsChanging] = useState(false);
 
+  // Ensure value is a safe number to prevent React/Framer crashes on NaN or undefined
+  const safeValue = typeof value === 'number' && !isNaN(value) ? value : (parseFloat(value) || 0);
+
   // Rapid spring config (no bounce, aggressive snapping to target)
-  const spring = useSpring(value, {
+  const spring = useSpring(safeValue, {
     stiffness: 400,
     damping: 40,
     mass: 1,
@@ -14,14 +17,14 @@ export default function AnimatedCounter({ value, className, prefix = '', suffix 
 
   // Keep spring updated
   useEffect(() => {
-    spring.set(value);
-  }, [value, spring]);
+    spring.set(safeValue);
+  }, [safeValue, spring]);
 
   // Hook into the spring to know if we are currently animating numbers.
   // When animating, change text to orange.
   useMotionValueEvent(spring, 'change', (latest) => {
     // Check difference at the specified precision
-    const diff = Math.abs(latest - value);
+    const diff = Math.abs((latest || 0) - safeValue);
     const threshold = 1 / Math.pow(10, decimals + 1); // small threshold for floats
     
     if (diff > threshold) {
@@ -33,7 +36,8 @@ export default function AnimatedCounter({ value, className, prefix = '', suffix 
 
   // Calculate formatted output
   const displayValue = useTransform(spring, (current) => {
-    return prefix + current.toLocaleString(undefined, { 
+    const num = typeof current === 'number' && !isNaN(current) ? current : 0;
+    return prefix + num.toLocaleString(undefined, { 
       minimumFractionDigits: decimals, 
       maximumFractionDigits: decimals 
     }) + suffix;
