@@ -7,6 +7,76 @@ import Sidebar from './components/Sidebar';
 import CelebrationOverlay from './components/CelebrationOverlay';
 import AnimatedCounter from './components/AnimatedCounter';
 
+// ─── Loading Overlay ──────────────────────────────────────────────────────────
+function LoadingOverlay() {
+  const { isLoading } = useGame();
+  return (
+    <AnimatePresence>
+      {isLoading && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.15 }}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(11, 12, 16, 0.75)',
+            backdropFilter: 'blur(3px)',
+            zIndex: 99999,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '16px',
+            pointerEvents: 'all',
+          }}
+        >
+          {/* Spinning ring */}
+          <div style={{ position: 'relative', width: '56px', height: '56px' }}>
+            <div style={{
+              position: 'absolute',
+              inset: 0,
+              borderRadius: '50%',
+              border: '2px solid rgba(0,240,255,0.1)',
+            }} />
+            <div style={{
+              position: 'absolute',
+              inset: 0,
+              borderRadius: '50%',
+              border: '2px solid transparent',
+              borderTopColor: '#00f0ff',
+              borderRightColor: 'rgba(0,240,255,0.4)',
+              animation: 'spin-slow 0.7s linear infinite',
+              boxShadow: '0 0 16px rgba(0,240,255,0.4)',
+            }} />
+            <div style={{
+              position: 'absolute',
+              inset: '10px',
+              borderRadius: '50%',
+              border: '1px solid transparent',
+              borderTopColor: 'rgba(0,240,255,0.6)',
+              animation: 'spin-slow 0.4s linear infinite reverse',
+            }} />
+          </div>
+          <div
+            className="font-orbitron"
+            style={{
+              fontSize: '10px',
+              letterSpacing: '0.35em',
+              color: '#00f0ff',
+              textShadow: '0 0 10px rgba(0,240,255,0.6)',
+              animation: 'pulse-glow 1.5s ease-in-out infinite',
+            }}
+          >
+            PROCESSING
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
 import Dashboard from './pages/Dashboard';
 import Quests from './pages/Quests';
 import Skills from './pages/Skills';
@@ -194,6 +264,7 @@ export default function App() {
     <GameProvider>
       <BrowserRouter>
         <AppInner />
+        <LoadingOverlay />
       </BrowserRouter>
     </GameProvider>
   );
