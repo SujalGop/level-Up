@@ -202,6 +202,14 @@ export function GameProvider({ children }) {
       balanceAfter: Number(balanceAfter.toFixed(1)),
       details
     });
+
+    if (state.transactions.length >= 20) {
+      const sorted = [...state.transactions].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+      const toDelete = sorted.slice(0, sorted.length - 19);
+      toDelete.forEach(tx => {
+        batch.delete(doc(db, `users/${user.uid}/transactions`, tx.id.toString()));
+      });
+    }
   };
 
   // ─── Core Financial Engine ──────────────────────────────────────────────────
