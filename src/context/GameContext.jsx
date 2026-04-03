@@ -28,6 +28,7 @@ const DEFAULT_STATE = {
   skillBooks: [],
   jobQuests: [],
   vaultGoals: [],
+  transactions: [],
   celebration: null,
 };
 
@@ -137,6 +138,7 @@ export function GameProvider({ children }) {
     unsubs.push(createCollectionListener('skillBooks', 'skillBooks'));
     unsubs.push(createCollectionListener('jobQuests', 'jobQuests'));
     unsubs.push(createCollectionListener('vaultGoals', 'vaultGoals'));
+    unsubs.push(createCollectionListener('transactions', 'transactions'));
 
     return () => unsubs.forEach(fn => fn());
   }, [user]);
@@ -188,8 +190,22 @@ export function GameProvider({ children }) {
     });
   }
 
+  // ─── Transaction Logger ──────────────────────────────────────────────────────
+  const appendTransaction = (batch, type, amount, balanceAfter, details = '') => {
+    if (!user) return;
+    const id = Date.now().toString() + '-' + Math.floor(Math.random() * 10000);
+    batch.set(doc(db, `users/${user.uid}/transactions`, id), {
+      id,
+      timestamp: new Date().toISOString(),
+      type,
+      amount: Number(amount.toFixed(1)),
+      balanceAfter: Number(balanceAfter.toFixed(1)),
+      details
+    });
+  };
+
   // ─── Core Financial Engine ──────────────────────────────────────────────────
-  const routeTaxToVault = useCallback(async (amount, targetGoalId = null) => {
+  const routeTaxToVault = useCallback(async (amount, targetGoalId = null, description = 'Mandatory Vault Tax') => {
     if (!user) return;
     await withLoading(async () => {
       const batch = writeBatch(db);
@@ -209,10 +225,11 @@ export function GameProvider({ children }) {
       };
 
       if (currentStats.goldCap > 0) {
-        newStats.goldCap = Math.max(0, currentStats.goldCap - amount);
+        newStats.goldCap = Number(Math.max(0, currentStats.goldCap - amount).toFixed(1));
       }
 
       batch.update(doc(db, 'users', user.uid), { playerStats: newStats });
+      appendTransaction(batch, 'tax', -amount, newStats.gold, description);
 
       goals.forEach(g => {
         batch.set(doc(db, `users/${user.uid}/vaultGoals`, g.id.toString()), g);
@@ -251,10 +268,11 @@ export function GameProvider({ children }) {
       };
 
       if (state.playerStats.goldCap > 0) {
-        newStats.goldCap = Math.max(0, state.playerStats.goldCap - amount);
+        newStats.goldCap = Number(Math.max(0, state.playerStats.goldCap - amount).toFixed(1));
       }
 
       batch.update(doc(db, 'users', user.uid), { playerStats: newStats });
+      appendTransaction(batch, 'vault_deposit', -amount, newStats.gold, 'Manual Vault Deposit');
 
       goals.forEach(g => {
         batch.set(doc(db, `users/${user.uid}/vaultGoals`, g.id.toString()), g);
@@ -290,6 +308,7 @@ export function GameProvider({ children }) {
           newStats.hp = Number(Math.min(100, newStats.hp + task.hpReward * multiplier).toFixed(1));
         }
         if (newStats.VIT >= 30 && newStats.hp >= 50) newStats.burnoutDebuff = false;
+        appendTransaction(batch, 'income', goldGain, newStats.gold, `Protocol Complete: ${task.title}`);
       } else if (status === 'failed') {
         const penalty = task.hpPenalty || 20;
         newStats.hp = Number(Math.max(0, newStats.hp - penalty).toFixed(1));
@@ -318,6 +337,7 @@ export function GameProvider({ children }) {
 
       const multiplier = state.playerStats.burnoutDebuff ? 0.5 : 1;
       const newStats = { ...state.playerStats };
+      const batch = writeBatch(db);
 
       if (removedLog.status === 'completed') {
         const goldGain = Number((task.goldReward * multiplier).toFixed(1));
@@ -328,13 +348,13 @@ export function GameProvider({ children }) {
         if (task.hpReward) {
           newStats.hp = Number(Math.max(0, newStats.hp - task.hpReward * multiplier).toFixed(1));
         }
+        appendTransaction(batch, 'expense', -goldGain, newStats.gold, `Undo action: ${task.title}`);
       } else if (removedLog.status === 'failed') {
         const penalty = task.hpPenalty || 20;
         newStats.hp = Number(Math.min(100, newStats.hp + penalty).toFixed(1));
       }
 
       const newTaskData = { ...task, history };
-      const batch = writeBatch(db);
       batch.update(doc(db, 'users', user.uid), { playerStats: newStats });
       batch.set(doc(db, `users/${user.uid}/masterTasks`, taskId.toString()), newTaskData);
       await batch.commit();
@@ -359,7 +379,7 @@ export function GameProvider({ children }) {
 
   const triggerPenalty = useCallback(async (amount) => {
     if (!user) return;
-    await routeTaxToVault(amount);
+    await routeTaxToVault(amount, null, 'Manual Penalty');
     const newHP = Number(Math.max(0, state.playerStats.hp - (amount / 20)).toFixed(1));
     await updateDoc(doc(db, 'users', user.uid), { 'playerStats.hp': newHP });
   }, [user, routeTaxToVault, state.playerStats]);
@@ -396,10 +416,15 @@ export function GameProvider({ children }) {
     const goldGain = minutes * 2;
     let nextGold = state.playerStats.gold + goldGain;
     if (state.playerStats.goldCap > 0 && nextGold > state.playerStats.goldCap) nextGold = state.playerStats.goldCap;
-    await withLoading(() => updateDoc(doc(db, 'users', user.uid), {
-      'playerStats.INT': Number((state.playerStats.INT + intGain).toFixed(1)),
-      'playerStats.gold': Number(nextGold.toFixed(1)),
-    }));
+    await withLoading(async () => {
+      const batch = writeBatch(db);
+      batch.update(doc(db, 'users', user.uid), {
+        'playerStats.INT': Number((state.playerStats.INT + intGain).toFixed(1)),
+        'playerStats.gold': Number(nextGold.toFixed(1)),
+      });
+      appendTransaction(batch, 'income', goldGain, nextGold, `Dungeon Cleared (${minutes}m)`);
+      await batch.commit();
+    });
     triggerCelebration(`⚔️ DUNGEON CLEARED! +${intGain} INT +${goldGain}G`, 'blue');
   }, [user, state.playerStats, triggerCelebration, withLoading]);
 
@@ -413,10 +438,12 @@ export function GameProvider({ children }) {
     await withLoading(async () => {
       if (item.isHealing) {
         const batch = writeBatch(db);
+        const newGold = state.playerStats.gold - item.baseCost;
         batch.update(doc(db, 'users', user.uid), {
-          'playerStats.gold': state.playerStats.gold - item.baseCost,
+          'playerStats.gold': newGold,
           'playerStats.hp': Math.min(100, state.playerStats.hp + (item.hpAmount || 0))
         });
+        appendTransaction(batch, 'expense', -item.baseCost, newGold, `Bought Healing Potion`);
         await batch.commit();
         triggerCelebration(`🧪 POTION CONSUMED! +${item.hpAmount} HP`, 'green');
         return;
@@ -445,6 +472,7 @@ export function GameProvider({ children }) {
       }
 
       batch.update(doc(db, 'users', user.uid), { playerStats: newStatsForDoc });
+      appendTransaction(batch, 'expense', -(state.playerStats.gold - newGold), newGold, `Purchased: ${item.name}`);
       newVaultGoals.forEach(g => {
         batch.set(doc(db, `users/${user.uid}/vaultGoals`, g.id.toString()), g);
       });
@@ -481,6 +509,7 @@ export function GameProvider({ children }) {
       const batch = writeBatch(db);
       batch.update(doc(db, 'users', user.uid), { playerStats: newStats });
       batch.update(doc(db, `users/${user.uid}/jobQuests`, id.toString()), { status: 'Completed' });
+      appendTransaction(batch, 'income', goldGain, newStats.gold, `Boss Defeated: ${milestone.title}`);
       await batch.commit();
 
       const rewardStr = Object.entries(milestone.statReward).map(([s, v]) => `+${v} ${s}`).join(' ');
@@ -597,12 +626,83 @@ export function GameProvider({ children }) {
 
   const setManualGold = useCallback(async (amount) => {
     if (!user) return;
+    const diff = amount - state.playerStats.gold;
     const updates = { 'playerStats.gold': amount };
     if (state.playerStats.goldCap > 0 && amount > state.playerStats.goldCap) {
       updates['playerStats.goldCap'] = amount;
     }
-    await withLoading(() => updateDoc(doc(db, 'users', user.uid), updates));
-  }, [user, state.playerStats.goldCap, withLoading]);
+    await withLoading(async () => {
+      const batch = writeBatch(db);
+      batch.update(doc(db, 'users', user.uid), updates);
+      if (diff !== 0) {
+        appendTransaction(batch, 'override', diff, amount, 'Manual Gold Override');
+      }
+      await batch.commit();
+    });
+  }, [user, state.playerStats.gold, state.playerStats.goldCap, withLoading]);
+
+  const logExpense = useCallback(async (amount, description) => {
+    if (!user) return;
+    if (amount <= 0 || amount > state.playerStats.gold) return;
+    await withLoading(async () => {
+      const batch = writeBatch(db);
+      const newStats = { ...state.playerStats };
+      newStats.gold = Number((newStats.gold - amount).toFixed(1));
+      if (newStats.goldCap > 0) {
+        newStats.goldCap = Number(Math.max(0, newStats.goldCap - amount).toFixed(1));
+      }
+      batch.update(doc(db, 'users', user.uid), { playerStats: newStats });
+      appendTransaction(batch, 'manual_expense', -amount, newStats.gold, description || 'Misc Expense');
+      await batch.commit();
+      triggerCelebration(`📝 EXPENSE LOGGED: -${amount}G`, 'red');
+    });
+  }, [user, state.playerStats, triggerCelebration, withLoading]);
+
+  const undoManualExpense = useCallback(async (transactionId) => {
+    if (!user) return;
+    const tx = state.transactions.find(t => t.id === transactionId);
+    if (!tx || tx.type !== 'manual_expense') return;
+
+    await withLoading(async () => {
+      const batch = writeBatch(db);
+      const refundAmount = Math.abs(tx.amount);
+      const newStats = { ...state.playerStats };
+      newStats.gold = Number((newStats.gold + refundAmount).toFixed(1));
+      if (newStats.goldCap > 0) {
+        newStats.goldCap = Number((newStats.goldCap + refundAmount).toFixed(1));
+      }
+      batch.update(doc(db, 'users', user.uid), { playerStats: newStats });
+      batch.delete(doc(db, `users/${user.uid}/transactions`, transactionId));
+      await batch.commit();
+      triggerCelebration(`↩ EXPENSE UNDONE: +${refundAmount}G`, 'blue');
+    });
+  }, [user, state.transactions, state.playerStats, triggerCelebration, withLoading]);
+
+  const editManualExpense = useCallback(async (transactionId, newAmount, newDescription) => {
+    if (!user) return;
+    const tx = state.transactions.find(t => t.id === transactionId);
+    if (!tx || tx.type !== 'manual_expense') return;
+
+    await withLoading(async () => {
+      const batch = writeBatch(db);
+      const oldAmount = Math.abs(tx.amount);
+      const diff = oldAmount - newAmount;
+
+      const newStats = { ...state.playerStats };
+      newStats.gold = Number((newStats.gold + diff).toFixed(1));
+      if (newStats.goldCap > 0) {
+        newStats.goldCap = Number((newStats.goldCap + diff).toFixed(1));
+      }
+
+      batch.update(doc(db, 'users', user.uid), { playerStats: newStats });
+      batch.update(doc(db, `users/${user.uid}/transactions`, transactionId), {
+        amount: -Number(newAmount),
+        details: newDescription || 'Misc Expense'
+      });
+      await batch.commit();
+      triggerCelebration(`📝 EXPENSE EDITED!`, 'blue');
+    });
+  }, [user, state.transactions, state.playerStats, triggerCelebration, withLoading]);
 
   const setGoldCap = useCallback(async (amount) => {
     if (!user) return;
@@ -673,6 +773,9 @@ export function GameProvider({ children }) {
     setManualGold,
     setGoldCap,
     setPlayerName,
+    logExpense,
+    undoManualExpense,
+    editManualExpense,
     evaluatePerfectDay,
     dismissNotification,
     logout,

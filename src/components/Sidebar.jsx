@@ -12,6 +12,7 @@ const NAV_ITEMS = [
   { path: '/dungeon', label: 'Dungeon', icon: '🏴', desc: 'Deep Work' },
   { path: '/shop', label: 'Shop', icon: '💎', desc: 'Savings Engine' },
   { path: '/milestones', label: 'Milestones', icon: '🏆', desc: 'Job Quests' },
+  { path: '/history', label: 'History & Logs', icon: '📜', desc: 'Transactions' },
   { path: '/vault', label: 'Guild Vault', icon: '🏦', desc: 'Savings' },
 ];
 

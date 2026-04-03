@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { motion, useSpring, useTransform, useMotionValueEvent } from 'framer-motion';
 import { cn } from '../utils/cn';
 
-export default function AnimatedCounter({ value, className, prefix = '', suffix = '', decimals = 1 }) {
+export default function AnimatedCounter({ value, className = '', prefix = '', suffix = '', decimals = 1 }) {
   const [isChanging, setIsChanging] = useState(false);
 
   // Ensure value is a safe number to prevent React/Framer crashes on NaN or undefined

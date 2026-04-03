@@ -58,12 +58,18 @@ const QuestCard = ({ task, selectedDate, onComplete, onFail, onUndo, onEdit, onD
         {/* Progress Bar */}
         {(() => {
           const progress = getTaskProgress(task, selectedDate);
+          const todayCount = (task.history || []).filter(h => h.date === formatDateStr(selectedDate) && h.status === 'completed').length;
+          
           if (progress.type === 'percent') {
+            const showTodayCount = ['weekly_count', 'yearly', 'continuous'].includes(task.recurrenceType);
             return (
               <div style={{ marginTop: '16px', maxWidth: '300px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', color: '#8892a0', marginBottom: '4px', fontFamily: 'Share Tech Mono, monospace', letterSpacing: '0.1em' }}>
                   <span>PROTOCOL PROGRESS</span>
-                  <span style={{ color: '#00f0ff' }}>{progress.current} / {progress.total}</span>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    {showTodayCount && <span style={{ color: '#00ff88' }}>TODAY: {todayCount}</span>}
+                    <span style={{ color: '#00f0ff' }}>{progress.current} / {progress.total}</span>
+                  </div>
                 </div>
                 <div style={{ height: '3px', background: 'rgba(255,255,255,0.05)', borderRadius: '1px', overflow: 'hidden' }}>
                   <motion.div 
@@ -76,8 +82,9 @@ const QuestCard = ({ task, selectedDate, onComplete, onFail, onUndo, onEdit, onD
             );
           } else {
             return (
-              <div style={{ marginTop: '12px', fontSize: '10px', color: '#00f0ff', fontFamily: 'Share Tech Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-                ⚡ LIFETIME SUCCESSES: {progress.current}
+              <div style={{ marginTop: '12px', fontSize: '10px', color: '#00f0ff', fontFamily: 'Share Tech Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.1em', display: 'flex', gap: '16px' }}>
+                <span>⚡ LIFETIME SUCCESSES: {progress.current}</span>
+                <span style={{ color: '#00ff88' }}>⭐ TODAY: {todayCount}</span>
               </div>
             );
           }

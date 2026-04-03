@@ -84,6 +84,7 @@ import Dungeon from './pages/Dungeon';
 import Shop from './pages/Shop';
 import Milestones from './pages/Milestones';
 import Vault from './pages/Vault';
+import History from './pages/History';
 
 // ─── Mobile Top Bar ───────────────────────────────────────────────────────────
 function MobileTopBar({ onMenuClick }) {
@@ -245,6 +246,7 @@ function AppInner() {
                   <Route path="/dungeon" element={<Dungeon />} />
                   <Route path="/shop" element={<Shop />} />
                   <Route path="/milestones" element={<Milestones />} />
+                  <Route path="/history" element={<History />} />
                   <Route path="/vault" element={<Vault />} />
                 </Routes>
               </AnimatePresence>
