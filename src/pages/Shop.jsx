@@ -248,7 +248,7 @@ export default function Shop() {
               </div>
             ) : (
               <div style={{ fontSize: '13px', color: '#8892a0', lineHeight: 1.6 }}>
-                <strong style={{ color: '#ffd700' }}>{confirmItem.baseCost.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}G</strong> will be deducted and routed to your SBI savings vault.
+                <strong style={{ color: '#ffd700' }}>{confirmItem.baseCost.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}G</strong> will be deducted and routed to your vault.
               </div>
             )}
             <div style={{ display: 'flex', gap: '8px' }}>

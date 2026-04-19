@@ -564,7 +564,7 @@ export default function Quests() {
           </div>
         </div>
         <div style={{ display: 'flex', gap: '8px' }}>
-          <button className="btn btn-blue" onClick={openAdd} id="add-quest-btn">+ CREATE LOGIC</button>
+          <button className="btn btn-blue" onClick={openAdd} id="add-quest-btn">+ CREATE QUEST</button>
         </div>
       </div>
 
@@ -712,7 +712,7 @@ export default function Quests() {
       <Modal isOpen={penaltyOpen} onClose={() => { setPenaltyOpen(false); setPenaltyMsg(''); }} title="MANUAL PENALTY" variant="red">
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           <div style={{ fontSize: '13px', color: '#8892a0', lineHeight: 1.5 }}>
-            Enter penalty amount. This Gold will be deducted and routed to your SBI savings mandate.
+            Enter penalty amount. This Gold will be deducted and routed to your vault.
           </div>
           <div>
             <label style={{ fontSize: '11px', color: '#ff003c', fontFamily: 'Orbitron, monospace', letterSpacing: '0.15em', display: 'block', marginBottom: '6px' }}>

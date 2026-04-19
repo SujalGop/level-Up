@@ -9,7 +9,7 @@ import { getSystemNow, formatDateStr } from '../utils/schedule';
 const DEFAULT_STATE = {
   playerStats: {
     name: 'Player',
-    class: 'E-Rank',
+    class: 'Level 1',
     gold: 0,
     goldCap: 0,
     hp: 100,
@@ -18,7 +18,6 @@ const DEFAULT_STATE = {
     INT: 0,
     VIT: 0,
     PER: 0,
-    sbiSavingsMandate: 0,
     lastPerfectDayCheck: '',
     perfectDayAchieved: false,
     dayEndTime: '00:00',
@@ -118,27 +117,39 @@ export function GameProvider({ children }) {
     const uid = user.uid;
     const unsubs = [];
 
-    unsubs.push(onSnapshot(doc(db, 'users', uid), (docSnap) => {
+    const initializeData = async () => {
+      const userRef = doc(db, 'users', uid);
+      const docSnap = await getDoc(userRef);
+
       if (docSnap.exists() && docSnap.data().playerStats) {
         setState(prev => ({ ...prev, playerStats: docSnap.data().playerStats }));
       } else {
-        setDoc(doc(db, 'users', uid), { playerStats: DEFAULT_STATE.playerStats }, { merge: true });
+        await setDoc(userRef, { playerStats: DEFAULT_STATE.playerStats });
       }
-    }));
 
-    const createCollectionListener = (colName, stateKey) => {
-      return onSnapshot(collection(db, `users/${uid}/${colName}`), (snapshot) => {
-        const items = snapshot.docs.map(d => ({ ...d.data(), id: isNaN(Number(d.id)) ? d.id : Number(d.id) }));
-        setState(prev => ({ ...prev, [stateKey]: items }));
-      });
+      // Re-attach listener specifically for subsequent updates
+      unsubs.push(onSnapshot(userRef, (latestSnap) => {
+        if (latestSnap.exists() && latestSnap.data().playerStats) {
+          setState(prev => ({ ...prev, playerStats: latestSnap.data().playerStats }));
+        }
+      }));
+
+      const createCollectionListener = (colName, stateKey) => {
+        return onSnapshot(collection(db, `users/${uid}/${colName}`), (snapshot) => {
+          const items = snapshot.docs.map(d => ({ ...d.data(), id: isNaN(Number(d.id)) ? d.id : Number(d.id) }));
+          setState(prev => ({ ...prev, [stateKey]: items }));
+        });
+      };
+
+      unsubs.push(createCollectionListener('masterTasks', 'masterTasks'));
+      unsubs.push(createCollectionListener('shopItems', 'shopItems'));
+      unsubs.push(createCollectionListener('skillBooks', 'skillBooks'));
+      unsubs.push(createCollectionListener('jobQuests', 'jobQuests'));
+      unsubs.push(createCollectionListener('vaultGoals', 'vaultGoals'));
+      unsubs.push(createCollectionListener('transactions', 'transactions'));
     };
 
-    unsubs.push(createCollectionListener('masterTasks', 'masterTasks'));
-    unsubs.push(createCollectionListener('shopItems', 'shopItems'));
-    unsubs.push(createCollectionListener('skillBooks', 'skillBooks'));
-    unsubs.push(createCollectionListener('jobQuests', 'jobQuests'));
-    unsubs.push(createCollectionListener('vaultGoals', 'vaultGoals'));
-    unsubs.push(createCollectionListener('transactions', 'transactions'));
+    initializeData();
 
     return () => unsubs.forEach(fn => fn());
   }, [user]);
@@ -229,7 +240,6 @@ export function GameProvider({ children }) {
       const newStats = {
         ...currentStats,
         gold: currentStats.gold - amount,
-        sbiSavingsMandate: currentStats.sbiSavingsMandate + amount,
       };
 
       if (currentStats.goldCap > 0) {
@@ -272,7 +282,6 @@ export function GameProvider({ children }) {
       const newStats = {
         ...state.playerStats,
         gold: state.playerStats.gold - amount,
-        sbiSavingsMandate: state.playerStats.sbiSavingsMandate + amount,
       };
 
       if (state.playerStats.goldCap > 0) {
@@ -459,21 +468,18 @@ export function GameProvider({ children }) {
 
       const batch = writeBatch(db);
       let newGold = state.playerStats.gold;
-      let newMandate = state.playerStats.sbiSavingsMandate;
       let newVaultGoals = state.vaultGoals.map(g => ({ ...g }));
 
       if (item.isLuxury) {
         newGold -= item.baseCost;
         newGold -= item.baseCost;
-        newMandate += item.baseCost;
         newVaultGoals = autoDistribute(newVaultGoals, item.baseCost);
       } else {
         newGold -= item.baseCost;
-        newMandate += item.baseCost;
         newVaultGoals = autoDistribute(newVaultGoals, item.baseCost);
       }
 
-      const newStatsForDoc = { ...state.playerStats, gold: newGold, sbiSavingsMandate: newMandate };
+      const newStatsForDoc = { ...state.playerStats, gold: newGold };
       if (state.playerStats.goldCap > 0) {
         const spentTotal = state.playerStats.gold - newGold;
         newStatsForDoc.goldCap = Math.max(0, state.playerStats.goldCap - spentTotal);

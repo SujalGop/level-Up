@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { useGame } from '../context/GameContext';
 import AnimatedCounter from './AnimatedCounter';
 import SettingsModal from './SettingsModal';
+import { deriveClass } from '../utils/leveling';
 
 const NAV_ITEMS = [
   { path: '/dashboard', label: 'Dashboard', icon: '◈', desc: 'Player Status' },
@@ -18,7 +19,8 @@ const NAV_ITEMS = [
 
 export default function Sidebar({ onClose }) {
   const { playerStats } = useGame();
-  const { gold, burnoutDebuff, hp, sbiSavingsMandate, name, class: playerClass } = playerStats;
+  const { gold, burnoutDebuff, hp, name } = playerStats;
+  const { cls: playerClass } = deriveClass(playerStats);
   
   const [settingsOpen, setSettingsOpen] = useState(false);
   
@@ -136,25 +138,6 @@ export default function Sidebar({ onClose }) {
           </div>
         </div>
 
-        {/* SBI Mandate */}
-        {sbiSavingsMandate > 0 && (
-          <div
-            style={{
-              marginTop: '8px',
-              padding: '6px 8px',
-              background: 'rgba(255,0,60,0.08)',
-              border: '1px solid rgba(255,0,60,0.25)',
-              borderRadius: '3px',
-            }}
-          >
-            <div style={{ fontSize: '9px', color: '#ff003c', fontFamily: 'Orbitron, monospace', letterSpacing: '0.1em', marginBottom: '2px' }}>
-              SBI MANDATE
-            </div>
-            <div className="font-mono" style={{ fontSize: '13px', color: '#ff003c', fontWeight: 700 }}>
-              ₹{sbiSavingsMandate.toLocaleString()}
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Navigation */}

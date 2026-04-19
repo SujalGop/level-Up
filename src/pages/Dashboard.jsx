@@ -7,29 +7,12 @@ import AnimatedCounter from '../components/AnimatedCounter';
 import BossCountdown from '../components/BossCountdown';
 import QuickReview from '../components/QuickReview';
 
-const CLASS_THRESHOLDS = [
-  { total: 0, class: 'E-Rank' },
-  { total: 100, class: 'D-Rank' },
-  { total: 250, class: 'C-Rank' },
-  { total: 500, class: 'B-Rank' },
-  { total: 900, class: 'A-Rank' },
-  { total: 1500, class: 'S-Rank' },
-  { total: 2500, class: 'National-Level' },
-];
-
-function deriveClass(stats) {
-  const total = stats.STR + stats.INT + stats.VIT + stats.PER;
-  let cls = 'E-Rank';
-  for (const t of CLASS_THRESHOLDS) {
-    if (total >= t.total) cls = t.class;
-  }
-  return { cls, total };
-}
+import { deriveClass } from '../utils/leveling';
 
 export default function Dashboard() {
   const { playerStats, updateHP, setPlayerName, dismissNotification } = useGame();
-  const { name, gold, hp, burnoutDebuff, STR, INT, VIT, PER, sbiSavingsMandate, perfectDayAchieved } = playerStats;
-  const { cls, total: totalStats } = deriveClass(playerStats);
+  const { name, gold, hp, burnoutDebuff, STR, INT, VIT, PER, perfectDayAchieved } = playerStats;
+  const { cls, level, total: totalStats, currentThreshold, nextThreshold, progressPct } = deriveClass(playerStats);
 
   const [hpFlash, setHpFlash] = useState(false);
   const [isEditingName, setIsEditingName] = useState(false);
@@ -193,7 +176,7 @@ export default function Dashboard() {
             className="card"
             style={{ padding: '24px', marginBottom: '20px' }}
           >
-            <div className="section-title">RANK & CLASS</div>
+            <div className="section-title">CURRENT LEVEL</div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '16px' }}>
               <div
                 style={{
@@ -220,29 +203,22 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* Class progression */}
+            {/* Level progression */}
             <div style={{ fontSize: '11px', color: '#8892a0', marginBottom: '6px', fontFamily: 'Orbitron, monospace', letterSpacing: '0.1em' }}>
-              NEXT RANK PROGRESS
+              NEXT LEVEL PROGRESS
             </div>
-            {CLASS_THRESHOLDS.slice(1).map((threshold, i) => {
-              if (totalStats >= threshold.total) return null;
-              const prev = CLASS_THRESHOLDS[i].total;
-              const pct = Math.min(100, ((totalStats - prev) / (threshold.total - prev)) * 100);
-              return (
-                <div key={threshold.class}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                    <span style={{ fontSize: '11px', color: '#00f0ff', fontFamily: 'Share Tech Mono, monospace' }}>{threshold.class}</span>
-                    <span style={{ fontSize: '11px', color: '#8892a0', fontFamily: 'Share Tech Mono, monospace' }}>{totalStats.toFixed(1)}/{threshold.total}</span>
-                  </div>
-                  <div className="progress-bar-track">
-                    <div className="progress-bar-fill" style={{ width: `${pct}%`, background: 'linear-gradient(90deg, #0066ff, #00f0ff)' }} />
-                  </div>
-                </div>
-              );
-            }).filter(Boolean)[0]}
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                <span style={{ fontSize: '11px', color: '#00f0ff', fontFamily: 'Share Tech Mono, monospace' }}>Level {level + 1}</span>
+                <span style={{ fontSize: '11px', color: '#8892a0', fontFamily: 'Share Tech Mono, monospace' }}>{totalStats.toFixed(1)} / {nextThreshold}</span>
+              </div>
+              <div className="progress-bar-track">
+                <div className="progress-bar-fill" style={{ width: `${progressPct}%`, background: 'linear-gradient(90deg, #0066ff, #00f0ff)' }} />
+              </div>
+            </div>
           </motion.div>
 
-          {/* Gold & SBI Card */}
+          {/* Gold Card */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
@@ -265,15 +241,6 @@ export default function Dashboard() {
                       / <AnimatedCounter value={playerStats.goldCap} suffix="G" />
                     </span>
                   )}
-                </div>
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: '11px', color: '#ff003c', fontFamily: 'Orbitron, monospace', letterSpacing: '0.1em', marginBottom: '4px' }}>SBI MANDATE</div>
-                <div className="font-mono" style={{ fontSize: '32px', fontWeight: 700, color: '#ff003c', textShadow: '0 0 12px rgba(255,0,60,0.6)' }}>
-                  ₹{sbiSavingsMandate.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
-                </div>
-                <div style={{ fontSize: '10px', color: '#ff6680', marginTop: '4px' }}>
-                  TRANSFER TO BANK
                 </div>
               </div>
             </div>

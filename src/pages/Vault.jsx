@@ -7,7 +7,7 @@ import AnimatedCounter from '../components/AnimatedCounter';
 
 export default function Vault() {
   const { vaultGoals, playerStats, voluntaryDeposit, addVaultGoal, editVaultGoal, deleteVaultGoal } = useGame();
-  const { gold, sbiSavingsMandate } = playerStats;
+  const { gold } = playerStats;
 
   const [depositGoalId, setDepositGoalId] = useState(null);
   const [depositAmount, setDepositAmount] = useState('');
@@ -81,7 +81,6 @@ export default function Vault() {
         {[
           { label: 'TOTAL SAVED', value: `${totalSaved.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}G`, color: '#00ff88' },
           { label: 'TOTAL TARGET', value: `${totalTarget.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}G`, color: '#8892a0' },
-          { label: 'SBI MANDATE', value: `₹${sbiSavingsMandate.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}`, color: '#ff003c', sub: 'TRANSFER TO BANK' },
         ].map(item => (
           <div
             key={item.label}
